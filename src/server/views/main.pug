@@ -1,7 +1,34 @@
 doctype
-html(lang='en')
+html(lang='en', style='height: 100%')
   head
     meta(charset='utf-8')
+    meta(name='viewport',content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
     title QuarkChat
-  body
-    div Skeleton
+    link(rel='stylesheet', href='/libs/bootstrap/dist/css/bootstrap.min.css', attr)
+
+    block scripts
+      script(src='/libs/jquery/dist/jquery.min.js' defer)
+      script(src='/libs/bootstrap/dist/js/bootstrap.bundle.min.js' defer)
+  body(style='height: 100%')
+    block body
+      div.jumbotron.d-flex.align-items-center.min-vh-100(style='margin-bottom: 0')
+        div.container.card.card-block(style='padding: 1em; border-radius: 1em; max-width: 400px')
+          div#greeting(style='text-align: center')
+            h3 Welcome to QuarkChat!
+            p This is just a proof of concept and 
+              em.text-danger likely contains serious implementation errors.
+          hr
+          form(method='post', class='form-vertical', action='javascript:void(0);')
+            fieldset
+              div(style='text-align: center')
+                legend: strong.text-info Register
+              div.form-group
+                label Username:
+                input.form-control(name='username', placeholder="Username", autofocus)
+
+              div.form-actions
+                input.btn.btn-primary.float-right(type='submit', value='Register')
+              
+              div.form-actions
+                input.btn.btn-success.float-left(type='button', value='Import profile')
+
