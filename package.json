@@ -30,7 +30,7 @@
   "frontendDependencies": {
     "target": "libs/",
     "packages": {
-      "sidh": "5.1.2",
+      "sidh": "4.1.6",
       "sphincs": "2.4.0",
       "vue": "2.6.11",
       "bootstrap": "4.4.1",
