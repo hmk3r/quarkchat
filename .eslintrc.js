@@ -1,7 +1,7 @@
 module.exports = {
   "extends": "google",
   "env": {
-      "es6": true,
+      "es2017": true,
       "node": true,
       "commonjs": false,
       "browser": false
