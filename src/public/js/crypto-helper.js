@@ -1,29 +1,12 @@
-// This file was composed by me for the Year 2 group project
+// Part of this code was composed by me during the Year 2 Group project
 
 // https://tools.ietf.org/html/draft-ietf-msec-mikey-ecc-03
 // https://crypto.stackexchange.com/questions/2482/how-strong-is-the-ecdsa-algorithm
 // Use sha-256 to sign 256-bit ECDSA https://tools.ietf.org/html/rfc5656#section-6.2.1
 const cryptoHelper = (function () {
-  const ECDSA_256 = {
-    name: 'ECDSA',
-    namedCurve: 'P-256',
-    hash: { name: 'SHA-256' }
-  }
   const AES_256_GCM = {
     name: 'AES-GCM',
     length: 256
-  }
-
-  const ECDH_256 = {
-    name: 'ECDH',
-    namedCurve: 'P-256'
-  }
-
-  const RSA_OAEP_4096_SHA_512 = {
-    name: 'RSA-OAEP',
-    modulusLength: 4096,
-    publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-    hash: { name: 'SHA-512' },
   }
 
   const UTF8_ENCODER = new TextEncoder('utf-8')
@@ -34,6 +17,34 @@ const cryptoHelper = (function () {
   crypto = crypto || window.msCrypto; //for IE11
   if (crypto.webkitSubtle) {
     crypto.subtle = crypto.webkitSubtle; //for Safari
+  }
+
+  async function generateSignatureKeys() {
+    return sphincs.keyPair();
+  }
+
+  async function signInEnvelope(message, privateKey) {
+    return sphincs.sign(message, privateKey);
+  }
+
+  async function sign(message, privateKey) {
+    return sphincs.signDetached(message, privateKey);
+  }
+
+  async function openSignedEnvelope(envelope, publicKey) {
+    return sphincs.open(envelope, publicKey);
+  }
+
+  async function verifySignature(signature, message, publicKey) {
+    return sphincs.verifyDetached(signature, message, publicKey);
+  }
+
+  async function generateDHKeys() {
+    return sidh.keyPair();
+  }
+
+  async function deriveDHSecret(localPrivateKey, remotePublicKey) {
+    return sidh.secret(remotePublicKey, localPrivateKey);
   }
 
   // https://stackoverflow.com/a/40031979
@@ -54,26 +65,32 @@ const cryptoHelper = (function () {
     return new Uint8Array(arr)
   }
 
-  // https://stackoverflow.com/questions/9267899/arraybuffer-to-base64-encoded-string
   function bufToBase64(buffer) {
-    let binary = '';
-    let bytes = new Uint8Array(buffer);
-    let len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return window.btoa(binary);
+    return uint8ArrayToBase64(new Uint8Array(buffer));
   }
 
-  // https://stackoverflow.com/questions/21797299/convert-base64-string-to-arraybuffer
   function base64ToBuf(base64) {
-    let binary_string = window.atob(base64);
-    let len = binary_string.length;
-    let bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binary_string.charCodeAt(i);
+    return base64ToUint8Array(base64).buffer;
+  }
+
+  // Adapted from https://stackoverflow.com/questions/9267899/arraybuffer-to-base64-encoded-string
+  function uint8ArrayToBase64(uint8Array) {
+    let bytesAsChars = '';
+    for (let i = 0; i < uint8Array.byteLength; i++) {
+      bytesAsChars += String.fromCharCode(uint8Array[i]);
     }
-    return bytes.buffer;
+    
+    return window.btoa(bytesAsChars);
+  }
+
+  // Adapted from https://stackoverflow.com/questions/21797299/convert-base64-string-to-arraybuffer
+  function base64ToUint8Array(base64) {
+    let bytesAsChars = window.atob(base64);
+    let bytes = new Uint8Array(bytesAsChars.length);
+    for (let i = 0; i < bytes.byteLength; i++) {
+      bytes[i] = bytesAsChars.charCodeAt(i);
+    }
+    return bytes;
   }
 
   //https://stackoverflow.com/a/52420482
@@ -108,22 +125,11 @@ const cryptoHelper = (function () {
     return ALPHABET.charAt(number % ALPHABET.length)
   }
 
-  function sha384(message) {
-    return crypto.subtle.digest(
-      {
-        name: "SHA-384",
-      },
-      UTF8_ENCODER.encode(message)
-    ).then(bufToHex)
-  }
-
-  // returns keypair {publicKey, privateKey}
-  function generateECDSAKeys() {
-    return crypto.subtle.generateKey(
-      ECDSA_256,
-      true,
-      ['sign', 'verify']
-    )
+  async function sha512(message) {
+    const buffer = await crypto.subtle.digest({
+      name: "SHA-512",
+    }, UTF8_ENCODER.encode(message))
+    return bufToHex(buffer)
   }
 
   // returns JWK
@@ -144,17 +150,6 @@ const cryptoHelper = (function () {
     )
   }
 
-  // returns the signature as buffer string
-  function sign(privateKey, messageString, algorithm) {
-    let data = UTF8_ENCODER.encode(messageString)
-
-    return crypto.subtle.sign(
-      algorithm || ECDSA_256,
-      privateKey,
-      data
-    )
-  }
-
   // returns a random password of a specified length
   function generatePass(length) {
     let numbers = new Uint8Array(length || 15)
@@ -168,7 +163,7 @@ const cryptoHelper = (function () {
   }
 
   // returns a CryptoKey to be used in AES encryption/decryption
-  function deriveAESKey(password, pbkdfSalt, AESAlgorithm) {
+  async function deriveAESKey(password, pbkdfSalt, AESAlgorithm) {
     let PBKDF2 = {
       name: 'PBKDF2',
       salt: UTF8_ENCODER.encode(pbkdfSalt),
@@ -176,22 +171,8 @@ const cryptoHelper = (function () {
       hash: { name: 'SHA-256' }
     }
 
-    return crypto.subtle.importKey(
-      'raw',
-      UTF8_ENCODER.encode(password),
-      PBKDF2,
-      false,
-      ['deriveKey', 'deriveBits']
-    ).then(function (key) {
-
-      return crypto.subtle.deriveKey(
-        PBKDF2,
-        key,
-        AESAlgorithm || AES_256_GCM,
-        false,
-        ['encrypt', 'decrypt']
-      )
-    })
+    const key = await crypto.subtle.importKey('raw', UTF8_ENCODER.encode(password), PBKDF2, false, ['deriveKey', 'deriveBits'])
+    return crypto.subtle.deriveKey(PBKDF2, key, AESAlgorithm || AES_256_GCM, false, ['encrypt', 'decrypt'])
   }
 
   function deriveAESKeyRaw(buffer) {
@@ -204,117 +185,70 @@ const cryptoHelper = (function () {
     )
   }
 
-  // returns [encryptedData, initializationVector] Promise
-  function encryptAES(key, message, AESAlgorithm, ivLength) {
+  // returns {encryptedData: ..., iv: ...}
+  async function encryptAES(key, message, additionalData, AESAlgorithm, ivLength) {
     let iv = crypto.getRandomValues(new Uint8Array(ivLength || 12));
     const algorithm = {
       name: AESAlgorithm || AES_256_GCM.name,
       iv
     }
 
-    return Promise.all([
-      crypto.subtle.encrypt(
-        algorithm,
-        key,
-        UTF8_ENCODER.encode(message)
-      ),
-      Promise.resolve(iv)
-    ])
+    if (additionalData) {
+      algorithm.additionalData = additionalData;
+    }
+
+    const encryptedData = await crypto.subtle.encrypt(
+      algorithm,
+      key,
+      UTF8_ENCODER.encode(message)
+    )
+
+    return {encryptedData, iv}
   }
 
   // returns the decrypted data as string
-  function decryptAES(key, data, iv, AESAlgorithm) {
+  async function decryptAES(key, data, iv, additionalData, AESAlgorithm) {
     const algorithm = {
       name: AESAlgorithm || AES_256_GCM.name,
       iv
     }
 
-    return crypto.subtle.decrypt(
-      algorithm,
-      key,
-      data
-    ).then(function (message) {
-      return Promise.resolve(UTF8_DECODER.decode(message))
-    })
-  }
-
-  // returns keypair {publicKey - hex string, privateKey - CryptoKey}
-  function generateECDHKeys() {
-    return crypto.subtle.generateKey(
-      ECDH_256,
-      false,
-      ['deriveKey', 'deriveBits']
-    ).then(function (keyPair) {
-      return Promise.all([
-        Promise.resolve(keyPair.privateKey),
-        crypto.subtle.exportKey('raw', keyPair.publicKey)
-      ])
-    }).then(function (result) {
-      const [privateKey, publicKey] = result
-      return { privateKey: privateKey, publicKey: bufToHex(publicKey) }
-    })
-  }
-
-  // public key - hex
-  // private key - CryptoKey
-  // returns key as a buffer
-  function deriveECDHKey(publicKey, privateKey) {
-    return Promise.resolve().then(function () {
-      return hexToBuf(publicKey)
-    }).then(function (publicKeyRaw) {
-      return crypto.subtle.importKey(
-        'raw',
-        publicKeyRaw,
-        ECDH_256,
-        true,
-        [])
-    }).then(function (pbk) {
-      return crypto.subtle.deriveBits(
-        {
-          name: 'ECDH',
-          namedCurve: 'P-256',
-          public: pbk
-        },
-        privateKey,
-        256)
-    })
-  }
-
-  function generateRsaOAEPKeys() {
-    return crypto.subtle.generateKey(
-      RSA_OAEP_4096_SHA_512,
-      true,
-      ["encrypt", "decrypt"]
-    )
+    if (additionalData) {
+      algorithm.additionalData = additionalData;
+    }
+  
+    const message = await crypto.subtle.decrypt(algorithm, key, data)
+    return UTF8_DECODER.decode(message)
   }
 
   return {
-    ECDSA_256,
     AES_256_GCM,
-    ECDH_256,
-    RSA_OAEP_4096_SHA_512,
     UTF8_ENCODER,
     UTF8_DECODER,
     bufToHex,
     hexToBuf,
     bufToBase64,
     base64ToBuf,
+    uint8ArrayToBase64,
+    base64ToUint8Array,
     arrayToUint8Array,
     uint8ArrayToArray,
     splitDataAndAuthTag,
-    sha384,
-    generateECDSAKeys,
+    sha512,
     extractJWKey,
     importJWKey,
-    sign,
     generatePass,
     generatePbkdf2Salt,
     deriveAESKey,
     deriveAESKeyRaw,
     encryptAES,
     decryptAES,
-    generateECDHKeys,
-    deriveECDHKey,
-    generateRsaOAEPKeys
+    generateDHKeys,
+    deriveDHSecret,
+    generateSignatureKeys,
+    signInEnvelope,
+    sign,
+    openSignedEnvelope,
+    verifySignature,
   }
 })()
