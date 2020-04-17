@@ -44,6 +44,7 @@ module.exports = function(models, params) {
       public_key: publicKey,
       spk,
       otpks,
+      challenges: {},
     });
   }
 

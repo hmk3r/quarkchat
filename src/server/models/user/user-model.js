@@ -35,5 +35,9 @@ module.exports = {
         },
       },
     ],
+    challenges: {
+      type: Map,
+      of: String,
+    },
   },
 };

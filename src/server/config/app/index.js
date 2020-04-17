@@ -26,6 +26,10 @@ module.exports = function(params) {
     secret: 'PQChat',
     saveUninitialized: true,
     resave: true,
+    cookie: {
+      httpOnly: true,
+      // maxAge: 2 * 60 * 1000, // 2 minutes
+    },
   })); // change secret for production
 
   return app;
