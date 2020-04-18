@@ -15,7 +15,7 @@ module.exports = {
     },
     spk: {
       id: {
-        type: String,
+        type: Number,
         required: true,
       },
       envelope: {
@@ -23,18 +23,10 @@ module.exports = {
         required: true,
       },
     },
-    otpks: [
-      {
-        id: {
-          type: String,
-          required: true,
-        },
-        envelope: {
-          type: String,
-          required: true,
-        },
-      },
-    ],
+    otpks: {
+      type: Map,
+      of: String,
+    },
     challenges: {
       type: Map,
       of: String,
