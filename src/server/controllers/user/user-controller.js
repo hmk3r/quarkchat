@@ -100,8 +100,6 @@ module.exports = function(params) {
       return next(error);
     }
 
-    console.info('OTPKS signature pass');
-
     try {
       await data.createUser(username, publicKey, spk, otpks);
     } catch (e) {
