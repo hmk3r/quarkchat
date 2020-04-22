@@ -6,24 +6,25 @@ html(lang='en', style='height: 100%')
     title QuarkChat
     link(rel='stylesheet', href='/libs/bootstrap/dist/css/bootstrap.min.css', attr)
     link(rel='stylesheet', href='/libs/toastr/build/toastr.min.css', attr)
+    link(rel='stylesheet', href='/libs/font-awesome/css/font-awesome.min.css')
 
     block scripts
       script(src='/libs/jquery/dist/jquery.min.js' defer)
       script(src='/libs/bootstrap/dist/js/bootstrap.bundle.min.js' defer)
-      script(src='/libs/sidh/dist/sidh.js' defer)
-      script(src='/libs/sphincs/dist/sphincs.js' defer)
       script(src='/libs/socket.io-client/dist/socket.io.js' defer)
       script(src='/libs/localforage/dist/localforage.min.js' defer)
       script(src='/libs/toastr/build/toastr.min.js' defer)
+      script(src='/libs/vue/dist/vue.min.js' defer)
       script(src='/js/constants.js' defer)
       script(src='/libs/promise-worker/dist/promise-worker.min.js' defer)
       script(src='/js/db-init.js' defer)
       script(src='/js/helpers.js' defer)
       script(src='/js/crypto-helper.js' defer)
+      script(src='/js/register.js' defer)
       script(src='/js/main.js' defer)
   body(style='height: 100%')
     block body
-      div.jumbotron.d-flex.align-items-center.min-vh-100(style='margin-bottom: 0')
+      div#content: div#registerSegment.jumbotron.d-flex.align-items-center.min-vh-100(style='margin-bottom: 0; display: none !important;')
         div.container.card.card-block(style='padding: 1em; border-radius: 1em; max-width: 400px')
           div#greeting(style='text-align: center')
             h3 Welcome to QuarkChat!

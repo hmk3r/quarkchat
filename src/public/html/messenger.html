@@ -1,0 +1,102 @@
+<!-- Messenger template due to sunil8107(https://bootsnipp.com/sunil8107)
+https://bootsnipp.com/snippets/1ea0N
+-->
+<link rel="stylesheet" href="/css/messenger.css">
+<div id="app" class="container">
+  <h3 class=" text-center">Quark Chat</h3>
+  <div class="messaging">
+    <div class="inbox_msg">
+      <div class="inbox_people">
+        <div class="headind_srch">
+          <div class="recent_heading">
+            <h4>Recent</h4>
+          </div>
+          <div class="srch_bar">
+            <div class="stylish-input-group">
+              <input type="text" class="search-bar" placeholder="Search">
+              <span class="input-group-addon">
+                <button type="button"> <i class="fa fa-search" aria-hidden="true"></i> </button>
+              </span> </div>
+          </div>
+        </div>
+        <div class="inbox_chat">
+          <template v-for="recipientUsername in conversations">
+            <div class="chat_list" :class="{ 'active_chat': recipientUsername === activeConversationRecipient }" v-bind:key="recipientUsername" @click="activeConversationRecipient = recipientUsername">
+              <div class="chat_people">
+                <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
+                <div class="chat_ib">
+                  <h5>{{ recipientUsername }}<span class="chat_date">{{messages[recipientUsername][messages[recipientUsername].length - 1]['date']}}</span></h5>
+                  <p>{{ messages[recipientUsername][messages[recipientUsername].length - 1]['content']}}</p>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+      <div class="mesgs">
+        <div class="msg_history">
+          <template v-for="message in messages[activeConversationRecipient]" >
+            <div v-if="message.type === 'in'" class="incoming_msg">
+              <div class="incoming_msg_img"> <span :data-letters="activeConversationRecipient.charAt(0)"></span>
+              </div>
+              <div class="received_msg">
+                <div class="received_withd_msg">
+                  <p class="msg">{{message.content}}</p>
+                  <span class="time_date">{{message.date}}</span>
+                </div>
+              </div>
+            </div>
+            <div  v-else-if="message.type === 'out'" class="outgoing_msg">
+              <div class="sent_msg">
+                <p class="msg">{{message.content}}</p>
+                <span class="time_date">{{message.date}}</span>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="type_msg">
+          <div class="input_msg_write">
+            <input type="text" class="write_msg" placeholder="Type a message" />
+            <button class="msg_send_btn" type="button"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <p class="text-center top_spac"> Design by <a target="_blank" href="#">Sunil Rajput</a></p>
+
+  </div>
+</div>
+<script>
+  let conversations = ['Jane Doe', 'John Doe']
+  let messages = {
+  'Jane Doe': [
+  {type: 'in', content: 'AAAAAAAAAAAAAAAAAAAAAAAAa', date: new Date().toLocaleDateString()},
+    {type: 'in', content: 'a?', date: new Date().toLocaleDateString()},
+    {type: 'in', content: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA     '.repeat(50), date: new Date().toLocaleDateString()},
+    {type: 'in', content: 'a', date: new Date().toLocaleDateString()},
+    {type: 'out', content: '???????', date: new Date().toLocaleDateString()},
+    {type: 'in', content: '!', date: new Date().toLocaleDateString()},
+    {type: 'in', content: '!', date: new Date().toLocaleDateString()},
+    {type: 'out', content: '!', date: new Date().toLocaleDateString()},
+  ],
+  'John Doe': [
+    {type: 'in', content: 'Hello', date: new Date().toLocaleDateString()},
+    {type: 'in', content: 'Are you there?', date: new Date().toLocaleDateString()},
+    {type: 'in', content: 'ASDFASFASDSA', date: new Date().toLocaleDateString()},
+    {type: 'in', content: 'QWERT', date: new Date().toLocaleDateString()},
+    {type: 'out', content: 'Works'.repeat(21), date: new Date().toLocaleDateString()},
+    {type: 'in', content: 'Does it now?', date: new Date().toLocaleDateString()},
+  ]
+}
+
+let app = new Vue({
+el: '#app',
+data: {
+  activeConversationRecipient: conversations[0],
+  conversations,
+  messages
+}
+})
+</script>
