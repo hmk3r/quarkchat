@@ -14,7 +14,7 @@ module.exports = {
     return true;
   },
   validateStringAlphaNum(str) {
-    return (/^[A-Za-z0-9]$/im).test(str);
+    return (/^[A-Za-z0-9]+$/im).test(str);
   },
   validateNumberBetween(num, min, max) {
     if (typeof num !== 'number' || num < min || min > max) {
