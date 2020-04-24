@@ -178,6 +178,9 @@ const cryptoHelper = (function () {
   }
 
   async function sha512(message) {
+    if (typeof message === 'string') {
+      message = UTF8_ENCODER.encode(message)
+    }
     const buffer = await crypto.subtle.digest({
       name: "SHA-512",
     }, UTF8_ENCODER.encode(message))
@@ -286,6 +289,10 @@ const cryptoHelper = (function () {
 
     if (typeof info === 'string') {
       info = UTF8_ENCODER.encode(info);
+    }
+
+    if (!length) {
+      length = HKDF_SHA_512.hashOutputLengthBytes;
     }
 
     if (!shouldDeriveBits) {
