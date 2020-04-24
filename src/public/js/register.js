@@ -40,18 +40,13 @@ async function generateAccount(username) {
 }
 
 function bootstrapRegisterPage() {
-  $('input[name="username"]').tooltip({
-    'trigger':'focus',
-    'title': 'Username must be between 3 and 30 characters',
-    'placement': 'right'
-  });
   
   $("#username").on('change keyup paste input blur', event => {
     const username = event.currentTarget.value;
     let validationResult = Promise.resolve();
   
-    if (username.length < 3 || username.length > 30) {
-      validationResult = Promise.resolve('Username must be between 3 and 30 characters')
+    if (!(/^[A-Za-z0-9]{3,30}$/.test(username))) {
+      validationResult = Promise.resolve('Username must be alphanumeric, between 3 and 30 characters')
     } else {
       validationResult = getJson(`/username-check/${username}`)
         .then(response => {
