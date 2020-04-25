@@ -43,7 +43,8 @@
       "localforage": "1.7.3",
       "promise-worker": "2.0.1",
       "font-awesome": "4.7.0",
-      "randomart-js": "0.1.1"
+      "randomart-js": "0.1.1",
+      "moment": "2.24.0"
     }
   },
   "devDependencies": {
