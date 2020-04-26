@@ -10,8 +10,8 @@ const crypto = require('crypto');
  * @return {string} random string
  */
 async function randomString(length, encoding) {
-  length = length || 8;
-  encoding = encoding || '';
+  length = length || 32;
+  encoding = encoding || 'base64';
   return crypto.randomBytes(length).toString(encoding);
 }
 

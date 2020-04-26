@@ -1,6 +1,7 @@
 module.exports = function(models, params) {
   const {
     User,
+    Otpk,
   } = models;
 
   // const User = require('mongoose').model();
@@ -39,13 +40,40 @@ module.exports = function(models, params) {
    * @return {UserModel}
    */
   async function createUser(username, publicKey, spk, otpks) {
+    for (const otpk of otpks) {
+      otpk.username = username;
+    }
+    await Otpk.insertMany(otpks);
     return User.create({
       username: username.toLowerCase(),
       public_key: publicKey,
       spk,
-      otpks,
-      challenges: {},
+      contacts: [],
     });
+  }
+
+  /**
+   *
+   *
+   * @param {string} username
+   * @return {OtpkModel} key bundle
+   */
+  async function getOtpk(username) {
+    return await Otpk.findOneAndDelete({username});
+  }
+
+  /**
+   *
+   *
+   * @param {string} username
+   * @param {Array<Otpk>} otpks
+   * @return {MongooseInsertMany}
+   */
+  async function addOtpksToUser(username, otpks) {
+    for (const otpk of otpks) {
+      otpk.username = username;
+    }
+    return Otpk.insertMany(otpks);
   }
 
   /**
@@ -63,5 +91,7 @@ module.exports = function(models, params) {
     getUserByUsername,
     createUser,
     updateUser,
+    getOtpk,
+    addOtpksToUser,
   };
 };

@@ -15,12 +15,15 @@ async function generateAccount(username) {
     signatureKeypair.privateKey
   );
   
-  const otpks = {};
+  const otpks = [];
   let otpkIndex = constants.DEFAULT_INDEX;
   for (let i = 0; i < constants.OTPKS_AMOUNT; i++, otpkIndex++) {
     const dhKeyPair = await cryptoHelper.generateDHKeys();
     const otpkEnvelope = await cryptoHelper.signInEnvelope(dhKeyPair.publicKey, signatureKeypair.privateKey);
-    otpks[otpkIndex.toString()] = cryptoHelper.uint8ArrayToBase64(otpkEnvelope);
+    otpks.push({
+      id: otpkIndex,
+      envelope: cryptoHelper.uint8ArrayToBase64(otpkEnvelope)
+    })
     await accountStorage.setItem(constants.OTPK_INDEX_DB_FIELD, otpkIndex);
     await otpkStorage.setItem(otpkIndex.toString(), dhKeyPair.privateKey);
   }

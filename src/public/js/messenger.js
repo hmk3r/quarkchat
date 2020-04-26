@@ -1,10 +1,63 @@
-function bootstrapMessenger() {
+async function postJsonAuthenticated(url, data, challenge, privateKey) {
+  const username = await accountStorage.getItem(constants.USERNAME_DB_FIELD);
+  if (!privateKey) {
+    privateKey = await accountStorage.getItem(constants.PRIVATE_KEY_DB_FIELD);
+  }
+
+  if (!challenge) {
+    challenge = (await postJson('/challenge', {username})).challenge
+  }
+
+  data.username = username;
+  data.challenge = challenge;
+
+  const message = JSON.stringify(data);
+  const signature = await cryptoHelper.sign(
+    cryptoHelper.base64ToUint8Array(btoa(message)),
+    privateKey
+  )
+  return postJson(url, {signature: cryptoHelper.uint8ArrayToBase64(signature), message});
+}
+
+async function searchUsername() {
+  const searchBtn = $('#searchButton');
+  const searchBox = $('#search');
+  const username = searchBox.val().toLowerCase();
+  if (searchBtn.prop('disabled') || searchBox.prop('disabled')) {
+    return;
+  }
+
+  if (!searchBox[0].checkValidity() || !username) {
+    searchBox[0].reportValidity()
+    return;
+  }
+  searchBtn.prop('disabled', true);
+  searchBox.prop('disabled', true);
+
+  try {
+    const result = await getJson(`/username-check/${username}`)
+    if (result.isFree) {
+      throw new Error()
+    }
+    searchBox.val('');
+    app.addNewRecipient(username)
+  } catch (e) {
+    toastr.error(`User ${username} does not exists!`, 'User not found');
+  } finally {
+    searchBtn.prop('disabled', false);
+    searchBox.prop('disabled', false);
+  }
+}
+
+async function bootstrapMessenger() {
   function submitForm() {
     console.log('submitted')
   }
   // username: hasNewMessages
-  let conversations = {'Jane Doe': false, 'John Doe': false}
-  let conversationsOrder = ['Jane Doe','John Doe' ]
+  let conversationsJson = localStorage.getItem('conversations')
+  let conversationsOrderJson = localStorage.getItem('conversationsOrder')
+  let conversations = conversationsJson ? JSON.parse(conversationsJson) : {'Jane Doe': true, 'John Doe': false}
+  let conversationsOrder = conversationsOrderJson ? JSON.parse(conversationsOrderJson): ['Jane Doe','John Doe' ]
   let messages = {
   'Jane Doe': [
       {type: 'in', content: 'AAAAAAAAAAAAAAAAAAAAAAAAa', date: new Date().toLocaleDateTimeString()},
@@ -27,7 +80,7 @@ function bootstrapMessenger() {
   }
   const draftsJson = localStorage.getItem('drafts');
   let drafts = draftsJson ? JSON.parse(draftsJson) : {};
-  let username = 'Aa'.repeat(15);
+  let username = (await accountStorage.getItem(constants.USERNAME_DB_FIELD)).toLowerCase();
   let activeConversationRecipient = (() => {
     for (const i of conversationsOrder) if (!conversations[i]) return i;
   })();
@@ -44,6 +97,7 @@ function bootstrapMessenger() {
     },
     methods: {
       switchConversation: function(username) {
+        username = username.toLowerCase();
         const messageComposer = $('#messageComposer');
         const draft = messageComposer.val();
         const draftUsername = messageComposer.attr('username');
@@ -58,7 +112,29 @@ function bootstrapMessenger() {
           if(latestMessageDom) latestMessageDom.scrollIntoView();
         })
       },
+      addNewRecipient: function(username) {
+        username = username.toLowerCase()
+        if (username === this.username) {
+          return;
+        }
+
+        if (this.conversations.hasOwnProperty(username)) {
+          this.$set(this.conversations, username, false)
+          this.activeConversationRecipient = username;
+          this.scrollToLatestMessage();
+          return;
+        }
+
+        this.$set(this.messages, username, [])
+        this.$set(this.conversations, username, false)
+        this.conversationsOrder = [
+          username,
+          ...(this.conversationsOrder.filter((item) => item !== username))
+        ];
+        this.activeConversationRecipient = username;
+      },
       addMessageToUser: function(username, message) {
+        username = username.toLowerCase();
         if(!this.messages.hasOwnProperty(username)) {
           this.$set(this.messages, username, [message])
         } else {
@@ -66,7 +142,7 @@ function bootstrapMessenger() {
         }
 
         if(this.activeConversationRecipient !== username) {
-          this.$set(this.conversations, username, true)
+          this.$set(this.conversations, username, this.activeConversationRecipient !== username)
         }
 
         this.conversationsOrder = [
@@ -77,25 +153,56 @@ function bootstrapMessenger() {
         if(this.activeConversationRecipient === username) {
           this.scrollToLatestMessage();
         }
-      },
-      mounted: function() {
-        this.scrollToLatestMessage();
       }
     }
   })
 
-  $('#messageComposer').on('keypress' ,(event) => {
+  window.addEventListener('beforeunload', function(event) {
+    // localStorage.setItem('drafts', JSON.stringify(app.drafts))
+    // localStorage.setItem('conversations', JSON.stringify(app.conversations));
+    // localStorage.setItem('conversationsOrder', JSON.stringify(app.conversationsOrder));
+  })
+
+  app.scrollToLatestMessage();
+  const sendButton = $('#sendButton');
+  const messageComposer = $('#messageComposer');
+  sendButton.on('click', () => {
+    const message = messageComposer.val().trim();
+    if (!message) {
+      return;
+    }
+    const forUsername = messageComposer.attr('username').toLowerCase();
+    const date = new Date();
+    Vue.set(app.drafts, forUsername, '');
+    app.addMessageToUser(forUsername, {
+      type: 'out',
+      content: message,
+      date: date.toLocaleDateTimeString()
+    })
+  })
+  messageComposer.on('keypress' ,(event) => {
     if(!event.shiftKey && event.which == 13) {        
       event.preventDefault();
-      submitForm();
+      sendButton.click();
     }
   });
 
-  $('#messageComposer').focus();
-
-  window.addEventListener('beforeunload', function(event) {
-    localStorage.setItem('drafts', JSON.stringify(app.drafts))
-  })
+  messageComposer.focus();
 
   window.app = app;
+
+  const socket = io();
+  socket.on('socket_id', (socketId) => {
+    postJsonAuthenticated('/messaging/bind-socket', {socketId}).then(() => console.log('Registered socket ID: ', socketId));
+  });
+
+  $('#search').on('keypress', (event) => {
+    if(event.which == 13) {        
+      event.preventDefault();
+      searchUsername().then();
+    }
+  })
+
+  $('#searchButton').on('click', () => searchUsername().then());
+  $('#app').attr('style', '');
 }

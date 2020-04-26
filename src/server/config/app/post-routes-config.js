@@ -19,6 +19,9 @@ module.exports = function(app, params) {
     } else if (config.environment !== 'development' ) {
       name = 'Error';
       message = 'Internal server error';
+    } else {
+      message = error.message.slice(0, 100);
+      console.log(message);
     }
 
     res.status(status).json({name, message});

@@ -13,7 +13,7 @@ module.exports = {
   environment,
   connectionString: connectionStrings[environment],
   port: process.env.PORT || 8080,
-  timestampTimeout: process.env.TIMESTAMP_TIMEOUT || 60 * 1000, // 60 seconds
+  challengeTimeout: process.env.CHALLENGE_TIMEOUT || 60 * 1000, // 60 seconds
   // renewal time for signed pre-key
   spkRenewalInterval: {
     value: process.env.SPK_RENEWAL_INTERVAL_VALUE || 1,
