@@ -6,7 +6,7 @@ async function generateAccount(username) {
   const pkKeypair = await cryptoHelper.generateDHKeys();
   await accountStorage.setItem(constants.SPK_INDEX_DB_FIELD, constants.DEFAULT_INDEX);
   const pkIndex = await accountStorage.getItem(constants.SPK_INDEX_DB_FIELD);
-  await pkStorage.setItem(pkIndex.toString(), pkKeypair.privateKey);
+  await pkStorage.setItem(pkIndex.toString(), pkKeypair);
 
   const spkEnvelope = await cryptoHelper.signInEnvelope(pkKeypair.publicKey, signatureKeypair.privateKey);
   

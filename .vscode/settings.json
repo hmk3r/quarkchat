@@ -6,6 +6,8 @@
     "Rajput",
     "Sunil",
     "ciphertext",
+    "contactsad",
+    "contactspbks",
     "cryptosystem",
     "keypair",
     "keypress",
@@ -19,6 +21,7 @@
     "sidh",
     "sphincs",
     "spks",
+    "stateskeys",
     "toastr"
   ]
 }

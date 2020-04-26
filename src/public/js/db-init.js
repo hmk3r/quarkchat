@@ -6,3 +6,6 @@ const accountStorage = localforage.createInstance({ name: 'QuarkChat', storeName
 const messageStorage = localforage.createInstance({ name: 'QuarkChat' , storeName: 'messages' });
 const pkStorage = localforage.createInstance({ name: 'QuarkChat' , storeName: 'prekeys' })
 const otpkStorage = localforage.createInstance({ name: 'QuarkChat' , storeName: 'onetimeprekeys' })
+const stateStorage = localforage.createInstance({ name: 'QuarkChat' , storeName: 'states' })
+const contactsPublicKeysStorage = localforage.createInstance({ name: 'QuarkChat' , storeName: 'contactspbks' })
+const contactsADStorage = localforage.createInstance({ name: 'QuarkChat' , storeName: 'contactsad' })
