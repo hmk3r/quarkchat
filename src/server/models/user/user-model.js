@@ -6,6 +6,8 @@ module.exports = {
       required: true,
       index: true,
       unique: true,
+      lowercase: true,
+      trim: true,
       minlength: [3, 'Username is too short!'],
       maxlength: [30, 'Username is too long!'],
     },

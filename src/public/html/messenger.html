@@ -29,10 +29,10 @@ https://bootsnipp.com/snippets/1ea0N
                 <div class="chat_img"> <img src="/images/avatar.png" alt="avatar"> </div>
                 <div class="chat_ib">
                   <h5>{{ recipientUsername }}
-                    <span class="chat_date" v-if="messages[recipientUsername].length > 0">{{messages[recipientUsername][messages[recipientUsername].length - 1]['date']}}</span>
+                    <span class="chat_date" v-if="messages[recipientUsername] && messages[recipientUsername].length > 0">{{messages[recipientUsername][messages[recipientUsername].length - 1]['date'].toLocaleDateTimeString()}}</span>
                     <span class="chat_date" v-else>{{ (new Date()).toLocaleDateTimeString()}}</span>
                   </h5>
-                  <p  v-if="messages[recipientUsername].length > 0" :class="conversations[recipientUsername] ? 'unread' : ''">{{ messages[recipientUsername][messages[recipientUsername].length - 1]['content']}}</p>
+                  <p  v-if="messages[recipientUsername] && messages[recipientUsername].length > 0" :class="conversations[recipientUsername] ? 'unread' : ''">{{ messages[recipientUsername][messages[recipientUsername].length - 1]['content']}}</p>
                   <p v-else></p>
                 </div>
               </div>
@@ -49,14 +49,14 @@ https://bootsnipp.com/snippets/1ea0N
               <div class="received_msg">
                 <div class="received_withd_msg">
                   <p class="msg">{{message.content}}</p>
-                  <span class="time_date">{{message.date}}</span>
+                  <span class="time_date">{{message.date.toLocaleDateTimeString()}}</span>
                 </div>
               </div>
             </div>
             <div  v-else-if="message.type === 'out'" class="outgoing_msg" :id="index === messages[activeConversationRecipient].length - 1 ? 'latestMessage' : ''">
               <div class="sent_msg">
                 <p class="msg">{{message.content}}</p>
-                <span class="time_date">{{message.date}}</span>
+                <span class="time_date">{{message.date.toLocaleDateTimeString()}}</span>
               </div>
             </div>
           </template>

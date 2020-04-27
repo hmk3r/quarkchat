@@ -38,4 +38,4 @@ server.listen(config.port, () => {
 });
 
 // Schedule jobs
-// require('./server/utils/scheduled-tasks')({data, dateUtils, config});
+require('./server/utils/scheduled-tasks')({data, dateUtils, config});

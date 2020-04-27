@@ -1,6 +1,10 @@
 module.exports = function(params) {
   const {
     data,
+    io,
+    dateUtils,
+    cryptoUtils,
+    config,
   } = params;
 
 
@@ -25,6 +29,7 @@ module.exports = function(params) {
       return next(e);
     }
   }
+
   /**
    *
    *
@@ -53,20 +58,21 @@ module.exports = function(params) {
         recipient.contacts.includes(requester.username)) {
         return res.json({
           username: recipient.username,
-          pubicKey: recipient.public_key,
+          publicKey: recipient.public_key,
         });
       }
-
       const otpk = await data.getOtpk(recipient.username);
-
       if (!otpk) {
         const error = new Error('Cannot connect to this user at this time');
         error.public = true;
         return next(error);
       }
 
+      await data.addContactToUser(requester, recipient.username);
+      await data.addContactToUser(recipient, requester.username);
+
       // Add check for remaining OTPKS, add message to user if < some constant
-      return {
+      res.json({
         username: recipient.username,
         publicKey: recipient.public_key,
         spk: recipient.spk,
@@ -74,14 +80,73 @@ module.exports = function(params) {
           id: otpk.id,
           envelope: otpk.envelope,
         },
-      };
+      });
     } catch (e) {
       return next(e);
     }
   }
 
+  /**
+   *
+   *
+   *
+   * @param {Express.Request} req
+   * @param {Express.Response} res
+   * @param {Express.next} next
+   */
+  async function getAllMessages(req, res, next) {
+    const {
+      username,
+    } = req.body.messageParsed;
+    console.log(username);
+    try {
+      const dms = await data.getDMs(username);
+      await data.deleteMessages(dms);
+      return res.json(dms || []);
+    } catch (e) {
+      return next(e);
+    }
+  }
+
+  /**
+   *
+   *
+   *
+   * @param {Express.Request} req
+   * @param {Express.Response} res
+   * @param {Express.next} next
+   */
+  async function sendMessage(req, res, next) {
+    const {
+      forUsername,
+    } = req.body.messageParsed;
+
+    const {
+      signature,
+      message,
+    } = req.body;
+
+    try {
+      await data.createDM(forUsername, signature, message);
+      const recipientSocketId = data.getSocketIdForUsername(forUsername);
+      const challenge = await cryptoUtils.randomString();
+      await data.createChallenge(
+          forUsername,
+          challenge,
+          dateUtils.getMsTimestamp() + config.challengeTimeout,
+      );
+      io.to(recipientSocketId).emit('new_message', challenge);
+      return res.json({});
+    } catch (e) {
+      return next(e);
+    }
+  }
+
+
   return {
     bindSocket,
     fetchKeyBundle,
+    sendMessage,
+    getAllMessages,
   };
 };

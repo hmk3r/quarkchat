@@ -40,12 +40,13 @@ module.exports = function(models, params) {
    * @return {UserModel}
    */
   async function createUser(username, publicKey, spk, otpks) {
+    username = username.toLowerCase();
     for (const otpk of otpks) {
       otpk.username = username;
     }
     await Otpk.insertMany(otpks);
     return User.create({
-      username: username.toLowerCase(),
+      username: username,
       public_key: publicKey,
       spk,
       contacts: [],
@@ -59,7 +60,8 @@ module.exports = function(models, params) {
    * @return {OtpkModel} key bundle
    */
   async function getOtpk(username) {
-    return await Otpk.findOneAndDelete({username});
+    username = username.toLowerCase();
+    return Otpk.findOneAndDelete({username});
   }
 
   /**
@@ -70,6 +72,7 @@ module.exports = function(models, params) {
    * @return {MongooseInsertMany}
    */
   async function addOtpksToUser(username, otpks) {
+    username = username.toLowerCase();
     for (const otpk of otpks) {
       otpk.username = username;
     }
@@ -86,6 +89,20 @@ module.exports = function(models, params) {
     return userModel.save();
   }
 
+
+  /**
+   *
+   *
+   * @param {*} userModel
+   * @param {*} contactUsername
+   * @return {UserModel}
+   */
+  async function addContactToUser(userModel, contactUsername) {
+    return User.findByIdAndUpdate(userModel._id, {
+      $push: {contacts: contactUsername.toLowerCase()},
+    });
+  }
+
   return {
     usernameExists,
     getUserByUsername,
@@ -93,5 +110,6 @@ module.exports = function(models, params) {
     updateUser,
     getOtpk,
     addOtpksToUser,
+    addContactToUser,
   };
 };

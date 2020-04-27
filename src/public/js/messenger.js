@@ -84,30 +84,36 @@ async function getDmProcessor() {
 
   async function getState(username, receivedMessage) {
     if (publicKeys.hasOwnProperty(username) && additionalData.hasOwnProperty(username)) {
+      console.log(username, ' state exists')
       return stateStorage.getItem(username);
     }
+
+    const ownUsername = await accountStorage.getItem(constants.USERNAME_DB_FIELD);
+    const ownPublicKey = await accountStorage.getItem(constants.PUBLIC_KEY_DB_FIELD);
 
     const response = await postJsonAuthenticated('/messaging/key-bundle', { forUsername: username })
     const publicKey = cryptoHelper.base64ToUint8Array(response.publicKey)
     if ((!response.spk || !response.otpk) && receivedMessage) {
-      const ownUsername = await accountStorage.getItem(constants.USERNAME_DB_FIELD);
-      const ownPublicKey = await accountStorage.getItem(constants.PUBLIC_KEY_DB_FIELD)
-
+      console.log(username, ' processing first received message exists')
+      
+      console.log(receivedMessage);
       const isSignatureValid = await cryptoHelper.verifySignature(
         cryptoHelper.base64ToUint8Array(receivedMessage.signature),
-        receivedMessage.content,
+        cryptoHelper.base64ToUint8Array(btoa(receivedMessage.message)),
         publicKey
       )
 
       if (!isSignatureValid) {
         throw new Error('Message source not authentic');
       }
+      
+      const messageParsed = JSON.parse(receivedMessage.message);
 
       const {
         keyBundleIds,
         ephemeralSendPreKey: ephemeralSendPreKeyBase64,
         ephemeralReceivePreKey: ephemeralReceivePreKeyBase64
-      } = JSON.parse(receivedMessage.content)
+      } = messageParsed.initialisationParams
 
       const ephemeralSendPreKey = cryptoHelper.base64ToUint8Array(ephemeralSendPreKeyBase64);
       const ephemeralReceivePreKey = cryptoHelper.base64ToUint8Array(ephemeralReceivePreKeyBase64);
@@ -143,12 +149,13 @@ async function getDmProcessor() {
 
       return state;
     } else if (!response.spk || !response.otpk) {
+      console.log(username, ' has send a message but not delivered yet')
       const error = new Error();
       error.name = CONVERSATION_STARTED_BY_OTHER_PARTY
       throw error;
     } else {
       let spk, otpk;
-
+      console.log(username, ' init')
       try {
         spk = await cryptoHelper.openSignedEnvelope(
           cryptoHelper.base64ToUint8Array(response.spk.envelope),
@@ -159,6 +166,7 @@ async function getDmProcessor() {
           publicKey
         )
       } catch (e) {
+        throw e;
         throw new Error('Pre-keys are not authentic');
       }
 
@@ -211,7 +219,7 @@ async function getDmProcessor() {
       const result = await _encryptMessage(username, message);
       return result;
     } catch (error) {
-      if (error.name = CONVERSATION_STARTED_BY_OTHER_PARTY) {
+      if (error.name === CONVERSATION_STARTED_BY_OTHER_PARTY) {
         await timeout(15 * 1000);
         return encryptMessage(username, message, attempt + 1);
       } else {
@@ -233,23 +241,41 @@ async function getDmProcessor() {
         return Promise.all([
           state,
           ratcheting.ratchetEncrypt(state, message, additionalData[username]),
+          messageStorage.getItem(username)
         ])
       }).then((result) => {
-        const [
+        let [
           state,
-          encryptionResult
+          encryptionResult,
+          messages
         ] = result;
+
+        if (!messages) {
+          messages = []
+        }
+
+        const messageParsed = JSON.parse(message);
+        const saveMessage = {
+          type: 'out',
+          content: messageParsed.text,
+          date: messageParsed.date instanceof Date ? messageParsed.date : new Date(messageParsed.date)
+        }
+
+        messages.push(saveMessage);
 
         if (!state.received) {
           encryptionResult.initialisationParams = state.initialisationParams;
         }
 
+        encryptionResult.forUsername = username;
+
         return Promise.all([
           stateStorage.setItem(username, state),
+          messageStorage.setItem(username, messages),
           encryptionResult,
-        ])
+        ]);
       }).then((result) => {
-        resolve(result[1])
+        resolve(result[2])
         return;
       }).catch((error) => {
         reject(error);
@@ -259,7 +285,7 @@ async function getDmProcessor() {
   }
 
   function decryptMessage(receivedMessage) {
-    const messageContent = JSON.parse(receivedMessage.content);
+    const messageContent = JSON.parse(receivedMessage.message);
     username = messageContent.username.toLowerCase();
     if (!storageConcurrencyPromises.hasOwnProperty(username)) {
       storageConcurrencyPromises[username] = Promise.resolve();
@@ -273,7 +299,7 @@ async function getDmProcessor() {
           state,
           cryptoHelper.verifySignature(
             cryptoHelper.base64ToUint8Array(receivedMessage.signature),
-            receivedMessage.content,
+            cryptoHelper.base64ToUint8Array(btoa(receivedMessage.message)),
             publicKeys[username]
           )
         ])
@@ -292,19 +318,38 @@ async function getDmProcessor() {
           ratcheting.ratchetDecrypt(
             state,
             messageContent,
-            additionalData[username])
+            additionalData[username]
+          ),
+          messageStorage.getItem(username),
         ]).then((result) => {
-          const [
+          let [
             state,
-            decryptionResult
+            decryptionResult,
+            messages,
           ] = result;
+
+          if (!messages) {
+            messages = []
+          }
+          const messageObject = JSON.parse(cryptoHelper.UTF8_DECODER.decode(decryptionResult));
+          const message = {
+            type: 'in',
+            content: messageObject.text,
+            date: messageObject.date instanceof Date ? messageObject.date : new Date(messageObject.date)
+          }
+
+          messages.push(message);
 
           return Promise.all([
             stateStorage.setItem(username, state),
-            decryptionResult,
+            messageStorage.setItem(username, messages),
+            {
+              sender: username,
+              content: message
+            }
           ])
         }).then((result) => {
-          resolve(result[1])
+          resolve(result[2])
           return;
         }).catch((error) => {
           reject(error);
@@ -320,8 +365,53 @@ async function getDmProcessor() {
   }
 }
 
+async function fetchMessages(app, dmProcessor, challenge) {
+  const messages = await postJsonAuthenticated('/messaging/messages', {}, challenge);
+  console.log(messages);
+  try {
+    for (const message of messages) {
+      if (message.type === 'dm') {
+        dmProcessor.decryptMessage(message.content).then((message) => {
+          app.addMessageToUser(message.sender, message.content)
+        })
+      }
+    }
+  } catch (e) {
+    throw e;
+    console.error(e);
+  }
+}
+
+async function sendMessage(app, dmProcessor, recipient, message) {
+  const messageBody = {
+    text: message,
+    date: new Date()
+  }
+
+  try {
+    app.addMessageToUser(recipient, {
+        type: 'out',
+        content: messageBody.text,
+        date: messageBody.date
+    });
+
+    const encryptedMessage = await dmProcessor.encryptMessage(
+      recipient.toLowerCase(),
+      JSON.stringify(messageBody)
+    )
+    
+    await postJsonAuthenticated('/messaging/send-message', encryptedMessage)
+  } catch (e) {
+    throw e;
+    console.error(e)
+  }
+}
+
 async function postJsonAuthenticated(url, data, challenge, privateKey) {
   const username = await accountStorage.getItem(constants.USERNAME_DB_FIELD);
+  if (!data) {
+    data = {};
+  }
   if (!privateKey) {
     privateKey = await accountStorage.getItem(constants.PRIVATE_KEY_DB_FIELD);
   }
@@ -375,29 +465,11 @@ async function bootstrapMessenger() {
   // username: hasNewMessages
   let conversationsJson = localStorage.getItem('conversations')
   let conversationsOrderJson = localStorage.getItem('conversationsOrder')
-  let conversations = conversationsJson ? JSON.parse(conversationsJson) : { 'Jane Doe': true, 'John Doe': false }
-  let conversationsOrder = conversationsOrderJson ? JSON.parse(conversationsOrderJson) : ['Jane Doe', 'John Doe']
-  let messages = {
-    'Jane Doe': [
-      { type: 'in', content: 'AAAAAAAAAAAAAAAAAAAAAAAAa', date: new Date().toLocaleDateTimeString() },
-      { type: 'in', content: 'a?', date: new Date().toLocaleDateTimeString() },
-      { type: 'in', content: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA '.repeat(50), date: new Date().toLocaleDateTimeString() },
-      { type: 'in', content: 'a', date: new Date().toLocaleDateTimeString() },
-      { type: 'out', content: '???????', date: new Date().toLocaleDateTimeString() },
-      { type: 'in', content: '!', date: new Date().toLocaleDateTimeString() },
-      { type: 'in', content: '!', date: new Date().toLocaleDateTimeString() },
-      { type: 'out', content: '!', date: new Date().toLocaleDateTimeString() },
-    ],
-    'John Doe': [
-      { type: 'in', content: 'Hello', date: new Date().toLocaleDateTimeString() },
-      { type: 'in', content: 'Are you there?', date: new Date().toLocaleDateTimeString() },
-      { type: 'in', content: 'ASDFASFASDSA', date: new Date().toLocaleDateTimeString() },
-      { type: 'in', content: 'QWERT', date: new Date().toLocaleDateTimeString() },
-      { type: 'out', content: 'Works'.repeat(21), date: new Date().toLocaleDateTimeString() },
-      { type: 'in', content: 'Does it now?', date: new Date().toLocaleDateTimeString() },
-    ]
-  }
-  const draftsJson = localStorage.getItem('drafts');
+  let conversations = conversationsJson ? JSON.parse(conversationsJson) : {}
+  let conversationsOrder = conversationsOrderJson ? JSON.parse(conversationsOrderJson) : []
+  let messages = {};
+  await messageStorage.iterate((v, k) => { messages[k] = v })
+  let draftsJson = localStorage.getItem('drafts');
   let drafts = draftsJson ? JSON.parse(draftsJson) : {};
   let username = (await accountStorage.getItem(constants.USERNAME_DB_FIELD)).toLowerCase();
   let activeConversationRecipient = (() => {
@@ -477,43 +549,14 @@ async function bootstrapMessenger() {
   })
 
   window.addEventListener('beforeunload', function (event) {
-    // localStorage.setItem('drafts', JSON.stringify(app.drafts))
-    // localStorage.setItem('conversations', JSON.stringify(app.conversations));
-    // localStorage.setItem('conversationsOrder', JSON.stringify(app.conversationsOrder));
+    localStorage.setItem('drafts', JSON.stringify(app.drafts))
+    localStorage.setItem('conversations', JSON.stringify(app.conversations));
+    localStorage.setItem('conversationsOrder', JSON.stringify(app.conversationsOrder));
   })
 
   app.scrollToLatestMessage();
-  const sendButton = $('#sendButton');
-  const messageComposer = $('#messageComposer');
-  sendButton.on('click', () => {
-    const message = messageComposer.val().trim();
-    if (!message) {
-      return;
-    }
-    const forUsername = messageComposer.attr('username').toLowerCase();
-    const date = new Date();
-    Vue.set(app.drafts, forUsername, '');
-    app.addMessageToUser(forUsername, {
-      type: 'out',
-      content: message,
-      date: date.toLocaleDateTimeString()
-    })
-  })
-  messageComposer.on('keypress', (event) => {
-    if (!event.shiftKey && event.which == 13) {
-      event.preventDefault();
-      sendButton.click();
-    }
-  });
-
-  messageComposer.focus();
 
   window.app = app;
-
-  const socket = io();
-  socket.on('socket_id', (socketId) => {
-    postJsonAuthenticated('/messaging/bind-socket', { socketId }).then(() => console.log('Registered socket ID: ', socketId));
-  });
 
   $('#search').on('keypress', (event) => {
     if (event.which == 13) {
@@ -522,6 +565,40 @@ async function bootstrapMessenger() {
     }
   })
 
+  const dmProcessor = await getDmProcessor();
+
+  const sendButton = $('#sendButton');
+  const messageComposer = $('#messageComposer');
+  sendButton.on('click', () => {
+    const message = messageComposer.val().trim();
+    if (!message) {
+      return;
+    }
+    const forUsername = messageComposer.attr('username');
+    if(!forUsername) {
+      return;
+    }
+    Vue.set(app.drafts, forUsername, '');
+    sendMessage(app, dmProcessor, forUsername, message);
+  })
+
+  messageComposer.on('keypress', (event) => {
+    if (!event.shiftKey && event.which == 13) {
+      event.preventDefault();
+      sendButton.click();
+    }
+  });
+
+  const socket = io();
+  socket.on('socket_id', (socketId) => {
+    postJsonAuthenticated('/messaging/bind-socket', { socketId }).then(() => console.log('Registered socket ID: ', socketId));
+  });
+  socket.on('new_message', (challenge) => {
+    fetchMessages(app, dmProcessor, challenge);
+  })
+  
   $('#searchButton').on('click', () => searchUsername().then());
   $('#app').attr('style', '');
+  messageComposer.focus();
+  fetchMessages(app, dmProcessor);
 }
