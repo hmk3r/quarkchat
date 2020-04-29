@@ -103,6 +103,16 @@ module.exports = function(models, params) {
     });
   }
 
+  /**
+   *
+   *
+   * @param {string} username
+   * @return {Number}
+   */
+  async function getOtpkCount(username) {
+    return Otpk.countDocuments({username: username.toLowerCase()});
+  }
+
   return {
     usernameExists,
     getUserByUsername,
@@ -111,5 +121,6 @@ module.exports = function(models, params) {
     getOtpk,
     addOtpksToUser,
     addContactToUser,
+    getOtpkCount,
   };
 };

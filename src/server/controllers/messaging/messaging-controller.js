@@ -70,7 +70,10 @@ module.exports = function(params) {
 
       await data.addContactToUser(requester, recipient.username);
       await data.addContactToUser(recipient, requester.username);
-
+      const remainingOtpks = await data.getOtpkCount(recipient.username);
+      if (remainingOtpks <= config.lowOtpkWarningThreshold) {
+        console.log(`${recipient.username} has low (${remainingOtpks} otpks`);
+      }
       // Add check for remaining OTPKS, add message to user if < some constant
       res.json({
         username: recipient.username,

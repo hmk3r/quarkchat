@@ -465,8 +465,10 @@ async function bootstrapMessenger() {
   // username: hasNewMessages
   let conversationsJson = localStorage.getItem('conversations')
   let conversationsOrderJson = localStorage.getItem('conversationsOrder')
+  let verifiedContactsJson = localStorage.getItem('verifiedContacts')
   let conversations = conversationsJson ? JSON.parse(conversationsJson) : {}
   let conversationsOrder = conversationsOrderJson ? JSON.parse(conversationsOrderJson) : []
+  let verifiedContacts = verifiedContactsJson ? JSON.parse(verifiedContactsJson) : {}
   let messages = {};
   await messageStorage.iterate((v, k) => { messages[k] = v })
   let draftsJson = localStorage.getItem('drafts');
@@ -482,6 +484,7 @@ async function bootstrapMessenger() {
       activeConversationRecipient,
       conversations,
       conversationsOrder,
+      verifiedContacts,
       messages,
       drafts,
       username
@@ -546,6 +549,32 @@ async function bootstrapMessenger() {
         if (this.activeConversationRecipient === username) {
           this.scrollToLatestMessage();
         }
+      },
+      showADRandomart: async function (username) {
+        username = username.toLowerCase();
+        if (!username) {
+          return;
+        }
+        const trustForm = $('#trustForm');
+        trustForm.hide();
+        const randomartBox = $('#randomart');
+        randomartBox.text('Please wait');
+        const additionalData = await contactsADStorage.getItem(username);
+        if (!additionalData) {
+          randomartBox.text('The conversation with this user has not yet been initiated.')
+          return;
+        }
+        const adHash = await cryptoHelper.sha512(additionalData);
+        let adRandomArt = randomart.render(adHash).map((arr) => arr.join('')).join('\n')
+        randomartBox.text(adRandomArt);
+        trustForm.show();
+      },
+      changeTrustState: function(username, event) {
+        username = username.toLowerCase();
+        if (!username) {
+          return;
+        }
+        this.$set(this.verifiedContacts, username, event.currentTarget.checked);
       }
     }
   })
@@ -554,6 +583,8 @@ async function bootstrapMessenger() {
     localStorage.setItem('drafts', JSON.stringify(app.drafts))
     localStorage.setItem('conversations', JSON.stringify(app.conversations));
     localStorage.setItem('conversationsOrder', JSON.stringify(app.conversationsOrder));
+    localStorage.setItem('verifiedContacts', JSON.stringify(app.verifiedContacts));
+    localStorage.setItem('drafts', JSON.stringify(app.drafts))
   })
 
   app.scrollToLatestMessage();
