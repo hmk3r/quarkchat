@@ -17,6 +17,11 @@ const constants = (function() {
     OTPKS_DB_FIELD: 'otpks',
     DEFAULT_INDEX: 0,
     OTPKS_AMOUNT: 11,
-    APPLICATION_NAME: 'QuarkChat'
+    APPLICATION_NAME: 'QuarkChat',
+    MESSAGE_TYPE: {
+      DIRECT_MESSAGE: 'dm',
+      SPK_CHANGE: 'spk_change',
+      OTPKS_LOW: 'otpks_low',
+    },
   }
 })();

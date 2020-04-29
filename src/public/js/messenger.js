@@ -70,6 +70,9 @@
 // }
 // )());
 
+let __generating_otpks_lock = false;
+let __generating_spk_lock = false;
+
 async function getDmProcessor() {
   const storageConcurrencyPromises = {};
   const publicKeys = {};
@@ -84,7 +87,6 @@ async function getDmProcessor() {
 
   async function getState(username, receivedMessage) {
     if (publicKeys.hasOwnProperty(username) && additionalData.hasOwnProperty(username)) {
-      console.log(username, ' state exists')
       return stateStorage.getItem(username);
     }
 
@@ -94,9 +96,6 @@ async function getDmProcessor() {
     const response = await postJsonAuthenticated('/messaging/key-bundle', { forUsername: username })
     const publicKey = cryptoHelper.base64ToUint8Array(response.publicKey)
     if ((!response.spk || !response.otpk) && receivedMessage) {
-      console.log(username, ' processing first received message exists')
-      
-      console.log(receivedMessage);
       const isSignatureValid = await cryptoHelper.verifySignature(
         cryptoHelper.base64ToUint8Array(receivedMessage.signature),
         cryptoHelper.base64ToUint8Array(btoa(receivedMessage.message)),
@@ -106,7 +105,7 @@ async function getDmProcessor() {
       if (!isSignatureValid) {
         throw new Error('Message source not authentic');
       }
-      
+
       const messageParsed = JSON.parse(receivedMessage.message);
 
       const {
@@ -149,13 +148,11 @@ async function getDmProcessor() {
 
       return state;
     } else if (!response.spk || !response.otpk) {
-      console.log(username, ' has send a message but not delivered yet')
       const error = new Error();
       error.name = CONVERSATION_STARTED_BY_OTHER_PARTY
       throw error;
     } else {
       let spk, otpk;
-      console.log(username, ' init')
       try {
         spk = await cryptoHelper.openSignedEnvelope(
           cryptoHelper.base64ToUint8Array(response.spk.envelope),
@@ -166,7 +163,6 @@ async function getDmProcessor() {
           publicKey
         )
       } catch (e) {
-        throw e;
         throw new Error('Pre-keys are not authentic');
       }
 
@@ -365,22 +361,6 @@ async function getDmProcessor() {
   }
 }
 
-async function fetchMessages(app, dmProcessor, challenge) {
-  const messages = await postJsonAuthenticated('/messaging/messages', {}, challenge);
-  console.log(messages);
-  try {
-    for (const message of messages) {
-      if (message.type === 'dm') {
-        dmProcessor.decryptMessage(message.content).then((message) => {
-          app.addMessageToUser(message.sender, message.content)
-        })
-      }
-    }
-  } catch (e) {
-    throw e;
-    console.error(e);
-  }
-}
 
 async function sendMessage(app, dmProcessor, recipient, message) {
   const messageBody = {
@@ -390,16 +370,16 @@ async function sendMessage(app, dmProcessor, recipient, message) {
 
   try {
     app.addMessageToUser(recipient, {
-        type: 'out',
-        content: messageBody.text,
-        date: messageBody.date
+      type: 'out',
+      content: messageBody.text,
+      date: messageBody.date
     });
 
     const encryptedMessage = await dmProcessor.encryptMessage(
       recipient.toLowerCase(),
       JSON.stringify(messageBody)
     )
-    
+
     await postJsonAuthenticated('/messaging/send-message', encryptedMessage)
   } catch (e) {
     throw e;
@@ -458,6 +438,102 @@ async function searchUsername() {
   } finally {
     searchBtn.prop('disabled', false);
     searchBox.prop('disabled', false);
+  }
+}
+
+async function submitOtpks() {
+  if (__generating_otpks_lock) {
+    return;
+  }
+
+  __generating_otpks_lock = true;
+
+  try {
+    const privateKey = await accountStorage.getItem(constants.PRIVATE_KEY_DB_FIELD);
+
+    const otpks = [];
+    let otpkIndex = await accountStorage.getItem(constants.OTPK_INDEX_DB_FIELD);
+    for (let i = 0; i < constants.OTPKS_AMOUNT; i++, otpkIndex++) {
+      const dhKeyPair = await cryptoHelper.generateDHKeys();
+      const otpkEnvelope = await cryptoHelper.signInEnvelope(dhKeyPair.publicKey, privateKey);
+      otpks.push({
+        id: otpkIndex,
+        envelope: cryptoHelper.uint8ArrayToBase64(otpkEnvelope)
+      })
+      await accountStorage.setItem(constants.OTPK_INDEX_DB_FIELD, otpkIndex);
+      await otpkStorage.setItem(otpkIndex.toString(), dhKeyPair.privateKey);
+    }
+
+    await postJsonAuthenticated('/account/otpks', { otpks });
+  } catch (e) {
+    throw e;
+  } finally {
+    __generating_otpks_lock = false;
+  }
+
+}
+
+async function submitSpk(renewalDate) {
+  if (__generating_spk_lock) {
+    return;
+  }
+
+  __generating_spk_lock = true;
+
+  renewalDate = renewalDate instanceof Date ? renewalDate : new Date(renewalDate);
+
+  if ((new Date()).getTime() < renewalDate.getTime()) {
+    return;
+  }
+
+  try {
+    const privateKey = await accountStorage.getItem(constants.PRIVATE_KEY_DB_FIELD);
+
+    const pkKeypair = await cryptoHelper.generateDHKeys();
+    let pkIndex = await accountStorage.getItem(constants.SPK_INDEX_DB_FIELD);
+    pkIndex++;
+    await accountStorage.setItem(constants.SPK_INDEX_DB_FIELD, pkIndex);
+    await pkStorage.setItem(pkIndex.toString(), pkKeypair);
+
+    const spkEnvelope = await cryptoHelper.signInEnvelope(pkKeypair.publicKey, privateKey);
+
+    const spk = {
+      id: pkIndex,
+      envelope: cryptoHelper.uint8ArrayToBase64(spkEnvelope)
+    }
+
+    await postJsonAuthenticated('/account/spk', { spk });
+  } catch (e) {
+    throw e;
+  } finally {
+    __generating_spk_lock = false;
+  }
+
+}
+
+async function fetchMessages(app, dmProcessor, challenge) {
+  const messages = await postJsonAuthenticated('/messaging/messages', {}, challenge);
+  try {
+    for (const message of messages) {
+      switch (message.type) {
+        case constants.MESSAGE_TYPE.DIRECT_MESSAGE:
+          dmProcessor.decryptMessage(message.content).then((message) => {
+            app.addMessageToUser(message.sender, message.content)
+          })
+          break;
+        case constants.MESSAGE_TYPE.SPK_CHANGE:
+          submitSpk(message.content).then();
+          break;
+        case constants.MESSAGE_TYPE.OTPKS_LOW:
+          submitOtpks().then();
+          break;
+        default:
+          toastr.error('Unknown message type received')
+          break;
+      }
+    }
+  } catch (e) {
+    throw e;
   }
 }
 
@@ -569,7 +645,7 @@ async function bootstrapMessenger() {
         randomartBox.text(adRandomArt);
         trustForm.show();
       },
-      changeTrustState: function(username, event) {
+      changeTrustState: function (username, event) {
         username = username.toLowerCase();
         if (!username) {
           return;
@@ -608,7 +684,7 @@ async function bootstrapMessenger() {
       return;
     }
     const forUsername = messageComposer.attr('username');
-    if(!forUsername) {
+    if (!forUsername) {
       return;
     }
     Vue.set(app.drafts, forUsername, '');
@@ -624,12 +700,12 @@ async function bootstrapMessenger() {
 
   const socket = io();
   socket.on('socket_id', (socketId) => {
-    postJsonAuthenticated('/messaging/bind-socket', { socketId }).then(() => console.log('Registered socket ID: ', socketId));
+    postJsonAuthenticated('/messaging/bind-socket', { socketId }).then();
   });
   socket.on('new_message', (challenge) => {
     fetchMessages(app, dmProcessor, challenge);
   })
-  
+
   $('#searchButton').on('click', () => searchUsername().then());
   $('#app').attr('style', '');
   messageComposer.focus();

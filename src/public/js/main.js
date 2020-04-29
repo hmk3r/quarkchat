@@ -16,20 +16,6 @@ toastr.options = {
   'hideMethod': 'fadeOut'
 }
 
-if (!localStorage.getItem('performance-disclaimer-dismiss')) {
-  toastr.info(
-    `As this is an experiment, the application monitors how long it
-    takes to execute code which involves post-quantum cryptography.
-    You can click on this message to hide it permanently.`,
-    'Performance data collection',
-    {
-      'timeOut': '0',
-      'extendedTimeOut': '0',
-      'onclick': () => localStorage.setItem('performance-disclaimer-dismiss', 'true'),
-      'onCloseClick': () => localStorage.setItem('performance-disclaimer-dismiss', 'true')
-    });  
-}
-
 
 ;(async () => {
   const privateKey = await accountStorage.getItem(constants.PRIVATE_KEY_DB_FIELD);
