@@ -1,15 +1,17 @@
-<center><h1>Quark chat</h1></center>
+# Quark chat
 
 ## Installation
 
 - MongoDB version 4.2.1(or later) must be installed, running at its default port (27017) without authentication
-- Node version 12.16.2(or later) must be installed. If you have nvm installed, just run `nvm install && nvm use` the project's directory (this nvm feature does not work in a Windows environment)
+- Node version 12.16.2(or later) must be installed. If you have [nvm](https://github.com/nvm-sh/nvm) installed, just run `nvm install && nvm use` the project's directory (this nvm feature does not work in a Windows environment)
 
 1. Clone this repository
 2. Open a terminal and navigate to the repository
 3. Run `npm install` and wait for the dependencies to be installed
 4. Run `npm start` to start the application. Configuration options are available (see the [Configuration](#configuration) section).
 5. Open a web-browser. By default, the app is available at <http://localhost:8080>
+
+    **NOTE:** In order to be used on devices other than localhost, the app needs to be accessed over an https connection due to [WebCrypto API limitations](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts/features_restricted_to_secure_contexts). A quick way to overcome this is to use a tunnelling reverse proxy such as [ngrok](https://ngrok.com/)
 
 ## Configuration
 
