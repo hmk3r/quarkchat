@@ -333,7 +333,6 @@ const cryptoHelper = (function () {
   }
 
   async function hmacSign(key, data) {
-    if (!key) console.log((new Error()).stack)
     if (!key.constructor || key.constructor.name !== 'CryptoKey') {
       key = await crypto.subtle.importKey(
         'raw',

@@ -88,6 +88,7 @@ function bootstrapRegisterPage() {
 
     // Validation short-cut
     usernameInput.triggerHandler('blur').then(() => {
+      toastr.info('This might take some time, please do not refresh the page', 'Generating account')
       is_submitting = true;
       if(usernameInput.hasClass('is-invalid')) {
         throw new Error('Please enter a valid username');
