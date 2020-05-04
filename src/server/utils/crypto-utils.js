@@ -5,7 +5,7 @@ const crypto = require('crypto');
  * Generates a random string using a cryptographically secure RNG
  * By default it's composed of the base64 character set
  *
- * @param {int} length in Bytes; 8 by default
+ * @param {int} length in Bytes; 32 by default
  * @param {string} encoding string character set - base64, utf-8, hex, etc.
  * @return {string} random string
  */
