@@ -25,8 +25,11 @@ html(lang='en', style='height: 100%')
   body(style='height: 100%')
     block body
       div Account generation benchmark
-        input#runs(type="number", name="runs")
-        button#runBenchmark Run
+        br
+        label(for="runs") Runs
+        input#runs(type="number", name="runs" value="20")
+        button#runBenchmark.btn.btn-info Run
+        a#accountGenResultsDownload.btn.btn-primary.disabled(role="button" href="#") Download results
         p Run:&nbsp;
           span#runNum -
           |/
@@ -40,5 +43,74 @@ html(lang='en', style='height: 100%')
           p Standard Deviation:&nbsp;
             span#std -
             | ms
-
-
+      div Messaging benchmark
+        br
+        label(for="runsMessaging") Runs
+        input#runsMessaging(type="number", name="runs" value="20")
+        label(for="messageSize") Message size
+        input#messageSize(type="number", name="runs" value="60")
+        button#runBenchmarkMessaging.btn.btn-info Run
+        a#messagingResultsDownload.btn.btn-primary.disabled(role="button" href="#") Download results
+        div#initialMessagesEncryptTimes initialMessagesEncryptTimes Results:&nbsp;
+          p Run times:&nbsp;
+            span.results -
+          p Average:&nbsp;
+            span.average -
+            | ms
+          p Standard Deviation:&nbsp;
+            span.std -
+            | ms
+        div#initialMessagesDecryptTimes initialMessagesDecryptTimes Results:&nbsp;
+          p Run times:&nbsp;
+            span.results -
+          p Average:&nbsp;
+            span.average -
+            | ms
+          p Standard Deviation:&nbsp;
+            span.std -
+            | ms
+        div#regularMessagesEncryptTimes regularMessagesEncryptTimes Results:&nbsp;
+          p Run times:&nbsp;
+            span.results -
+          p Average:&nbsp;
+            span.average -
+            | ms
+          p Standard Deviation:&nbsp;
+            span.std -
+            | ms
+        div#regularMessageTickDecryptTimes regularMessageTickDecryptTimes Results:&nbsp;
+          p Run times:&nbsp;
+            span.results -
+          p Average:&nbsp;
+            span.average -
+            | ms
+          p Standard Deviation:&nbsp;
+            span.std -
+            | ms
+        div#regularMessageNoTickDecryptTimes regularMessageNoTickDecryptTimes Results:&nbsp;
+          p Run times:&nbsp;
+            span.results -
+          p Average:&nbsp;
+            span.average -
+            | ms
+          p Standard Deviation:&nbsp;
+            span.std -
+            | ms
+        div#skipMessagesNoTickDecryptTimes skipMessagesNoTickDecryptTimes Results:&nbsp;
+          p Run times:&nbsp;
+            span.results -
+          p Average:&nbsp;
+            span.average -
+            | ms
+          p Standard Deviation:&nbsp;
+            span.std -
+            | ms
+        div#outOfOrderMessageDecryptTimes outOfOrderMessageDecryptTimes Results:&nbsp;
+          p Run times:&nbsp;
+            span.results -
+          p Average:&nbsp;
+            span.average -
+            | ms
+          p Standard Deviation:&nbsp;
+            span.std -
+            | ms
