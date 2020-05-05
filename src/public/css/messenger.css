@@ -59,7 +59,7 @@ https://bootsnipp.com/snippets/1ea0N
   padding: 18px 16px 10px;
   cursor: pointer;
 }
-.inbox_chat { height: 550px; overflow-y: auto;}
+.inbox_chat { height: 581px; overflow-y: auto;}
 
 .active_chat{ background:#ebebeb;}
 

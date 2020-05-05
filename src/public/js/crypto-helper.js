@@ -244,10 +244,10 @@ const cryptoHelper = (function () {
       name: 'PBKDF2',
       salt: UTF8_ENCODER.encode(pbkdfSalt),
       iterations: 1000,
-      hash: { name: 'SHA-256' }
+      hash: { name: 'SHA-512' }
     }
 
-    const key = await crypto.subtle.importKey('raw', UTF8_ENCODER.encode(password), PBKDF2, false, ['deriveKey', 'deriveBits'])
+    const key = await crypto.subtle.importKey('raw', UTF8_ENCODER.encode(password), PBKDF2.name, false, ['deriveKey'])
     return crypto.subtle.deriveKey(PBKDF2, key, AESAlgorithm || AES_256_GCM, false, ['encrypt', 'decrypt'])
   }
 

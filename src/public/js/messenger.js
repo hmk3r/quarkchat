@@ -662,7 +662,6 @@ async function bootstrapMessenger() {
   })
 
   window.addEventListener('beforeunload', function (event) {
-    localStorage.setItem('drafts', JSON.stringify(app.drafts))
     localStorage.setItem('conversations', JSON.stringify(app.conversations));
     localStorage.setItem('conversationsOrder', JSON.stringify(app.conversationsOrder));
     localStorage.setItem('verifiedContacts', JSON.stringify(app.verifiedContacts));
@@ -710,6 +709,35 @@ async function bootstrapMessenger() {
   });
   socket.on('new_message', (challenge) => {
     fetchMessages(app, dmProcessor, challenge);
+  })
+
+  $('#exportProfileButton').on('click', () => {
+    let password = prompt('Enter a password having at least 10 characters and remember it - it will be used when importing your profile!');
+    if(!password || password.length < 10) {
+      toastr.error('Invalid password', 'Export failed');
+      return;
+    }
+
+    let secondPassword = prompt('Enter the password again:');
+    if (secondPassword !== password) {
+      toastr.error('Passwords do not match!', 'Export failed');
+      return;
+    }
+
+    socket.disconnect(true)
+    $('#app').hide();
+
+    alert(`After the export finishes, Download the generated file and store it to your drive. Click 'Ok' to begin the export`);
+    exportAccountToJson(password, true).then((accountJsonString) => {
+      const downloadLink = document.createElement('a');
+      downloadLink.href = URL.createObjectURL(new Blob([accountJsonString], {type : 'application/json'}));
+      downloadLink.download = `${app.username}-${(new Date()).toDateString()}.qc`
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      window.location.reload();
+    })
+
   })
 
   $('#searchButton').on('click', () => searchUsername().then());

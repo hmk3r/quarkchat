@@ -26,6 +26,7 @@ html(lang='en', style='height: 100%')
       script(src='/js/crypto-helper.js' defer)
       script(src='/js/helpers.js' defer)
       script(src='/js/ratcheting.js' defer)
+      script(src='/js/account-transferring.js' defer)
       script(src='/js/register.js' defer)
       script(src='/js/messenger.js' defer)
       script(src='/js/main.js' defer)
@@ -44,16 +45,32 @@ html(lang='en', style='height: 100%')
                 legend: strong.text-info Register
               div.form-group
                 label Username:
-                input.form-control(id='username' name='username', placeholder='Username')
+                input.form-control(id='username', name='username', placeholder='Username')
                 div.valid-feedback Looks good!
                 div#usernameFeedback.invalid-feedback Invalid username
 
               div.form-actions
                 button#registerSubmitBtn.btn.btn-primary.float-right(type='submit')
-                  span#loadingSpinner.spinner-border.spinner-border-sm(role='status' aria-hidden='true' style='display: none;')
+                  span#loadingSpinner.spinner-border.spinner-border-sm(role='status', aria-hidden='true', style='display: none;')
                   span &nbsp;
                   | Register
               
               div.form-actions
-                input.btn.btn-success.float-left(type='button', value='Import profile' style='display: none;')
-
+                button.btn.btn-success.float-left(type='button', data-toggle='modal', data-target='#importProfileModal') Import profile
+      div#importProfileModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='importProfileModalTitle', aria-hidden='true')
+        div.modal-dialog.modal-dialog-centered(role='document')
+          div.modal-content
+            div.modal-header
+              h5#importProfileModalTitle.modal-title Import profile
+              button.close(type='button', data-dismiss='modal', aria-label='Close'): span(aria-hidden='true') &times;
+            div.modal-body
+              form(method='post', class='form-vertical', action='javascript:void(0);')
+                div.custom-file
+                  input#accountFile.custom-file-input(type='file', name='accountFile', accept='.qc')
+                  label#accountFileLabel.custom-file-label(for='accountFile') Choose file...
+                div.form-actions
+                  label(for='password') Password:
+                  input.form-control(type='password' id='password', name='password', placeholder='Password')
+            div.modal-footer
+              button.btn.btn-danger(type='button' data-dismiss='modal') Close
+              button#importBtn.btn.btn-primary(type='button') Import

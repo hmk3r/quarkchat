@@ -46,6 +46,8 @@ async function generateAccount(username) {
 
 function bootstrapRegisterPage() {
   let is_submitting = false;
+  let accountFileJsonString;
+
   $("#username").on('change keyup paste input blur', event => {
     const username = event.currentTarget.value;
   
@@ -111,4 +113,38 @@ function bootstrapRegisterPage() {
     });
   })
   
+  $('#accountFile').on('change', (event) => {
+    if(event.currentTarget.files.length === 0) {
+      return;
+    }
+    const file = event.currentTarget.files[0];
+    $('#accountFileLabel').text(file.name);
+    const reader = new FileReader();
+    reader.onload = () => {
+      accountFileJsonString = reader.result
+    };
+    reader.readAsText(file);
+  })
+
+  $('#importBtn').on('click', (event) => {
+    const password = $('#password').val();
+
+    if(!password || password.length < 10) {
+      toastr.error('Invalid password', 'Import failed');
+      return;
+    }
+
+    if(!accountFileJsonString) {
+      toastr.error('Account file not supplied', 'Import failed');
+      return
+    }
+
+    importAccount(accountFileJsonString, password, true).then(() => {
+      toastr.success('Account imported', 'Import successful');
+      window.location.reload();
+    }).catch((error) => {
+      toastr.error(error.name, 'Import failed');
+      return
+    })
+  })
 }
