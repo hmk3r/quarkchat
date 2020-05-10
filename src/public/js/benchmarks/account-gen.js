@@ -51,8 +51,8 @@ async function benchmarkAccount() {
 
   
   const downloadButton = $('#accountGenResultsDownload');
-  downloadButton.prop('href', `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(results))}`)
-  downloadButton.prop('download', `accountGenBenchmark-${runs}-${messageSize}-${navigator.userAgent.replace(/[/\\?%*:|"<>]/g, '-')}.json`)
+  downloadButton.prop('href', URL.createObjectURL(new Blob([JSON.stringify(results)], {type : 'application/json'})))
+  downloadButton.prop('download', `accountGenBenchmark-${runs}-${navigator.userAgent.replace(/[/\\?%*:|"<>]/g, '-')}.json`)
   downloadButton.removeClass('disabled');
   downloadButton[0].click();
 }
