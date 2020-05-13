@@ -39,8 +39,8 @@ The following variables are user configurable:
 | NODE_ENV      | string | One of `development` or `production`. When this variable is set to `production`, the CONNECTION_STRING variable must be also set and error messages are not printed to the console|development |
 | PORT | integer | The port the application runs at| 8080 |
 | CHALLENGE_TIMEOUT | integer | The timeout for the challenges served to users in ***ms*** |60000|
-|SPK_RENEWAL_INTERVAL_UNIT | string|The [time unit](https://momentjs.com/docs/#/manipulating/add/) for users' Signed pre-key change interval|M|
-|SPK_RENEWAL_INTERVAL_VALUE |integer|The value of SPK_RENEWAL_INTERVAL_UNIT |1|
+|SPK_RENEWAL_INTERVAL_UNIT | string|The [time unit](https://momentjs.com/docs/#/manipulating/add/) for users' Signed pre-key change interval|d|
+|SPK_RENEWAL_INTERVAL_VALUE |integer|The value of SPK_RENEWAL_INTERVAL_UNIT |2|
 |LOW_OTPK_WARNING_THRESHOLD |integer|The amount of one-time pre-keys for a user which, upon reached, makes the server request from the client(user) to submit more one-time pre-keys|5|
 
 ## Development
