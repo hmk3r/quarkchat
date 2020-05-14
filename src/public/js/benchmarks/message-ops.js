@@ -123,25 +123,36 @@ async function benchmarkMessaging() {
     const start = performance.now();
     const bobPreKeyBundle = await postJsonAuthenticated('/messaging/key-bundle', { forUsername: 'bob' }, 'alice', alice.privateKey);
     const publicKey = cryptoHelper.base64ToUint8Array(bobPreKeyBundle.publicKey)
-    let spk, otpk;
+    let spk, otpk, ephemeralSendPreKeyPair, ephemeralReceivePreKeyPair;
     try {
-      spk = await cryptoHelper.openSignedEnvelope(
-        cryptoHelper.base64ToUint8Array(bobPreKeyBundle.spk.envelope),
-        publicKey
-      )
-      otpk = await cryptoHelper.openSignedEnvelope(
-        cryptoHelper.base64ToUint8Array(bobPreKeyBundle.otpk.envelope),
-        publicKey
-      )
+      [
+        spk,
+        otpk,
+        ephemeralSendPreKeyPair,
+        ephemeralReceivePreKeyPair,
+      ] = await Promise.all([
+        cryptoHelper.openSignedEnvelope(
+          cryptoHelper.base64ToUint8Array(bobPreKeyBundle.spk.envelope),
+          publicKey
+        ),
+        cryptoHelper.openSignedEnvelope(
+          cryptoHelper.base64ToUint8Array(bobPreKeyBundle.otpk.envelope),
+          publicKey
+        ),
+        cryptoHelper.generateDHKeys(),
+        cryptoHelper.generateDHKeys()
+      ])
     } catch (e) {
       throw new Error('Pre-keys are not authentic');
     }
 
-    const ephemeralSendPreKeyPair = await cryptoHelper.generateDHKeys();
-    const ephemeralReceivePreKeyPair = await cryptoHelper.generateDHKeys();
-
-    const dh1 = await cryptoHelper.deriveDHSecret(ephemeralSendPreKeyPair.privateKey, otpk);
-    const dh2 = await cryptoHelper.deriveDHSecret(ephemeralReceivePreKeyPair.privateKey, spk);
+    const [
+      dh1,
+      dh2
+    ] = await Promise.all([
+      cryptoHelper.deriveDHSecret(ephemeralSendPreKeyPair.privateKey, otpk),
+      cryptoHelper.deriveDHSecret(ephemeralReceivePreKeyPair.privateKey, spk)
+    ])
 
     const sharedKey = await cryptoHelper.deriveBytesHKDF(
       cryptoHelper.concatUint8Arrays(dh1, dh2),
@@ -200,8 +211,13 @@ async function benchmarkMessaging() {
     const otpkPrivateKey = bob.otpk.privateKey;
     const spKeypair = bob.spk.keypair;
   
-    const dh1 = await cryptoHelper.deriveDHSecret(otpkPrivateKey, ephemeralSendPreKey);
-    const dh2 = await cryptoHelper.deriveDHSecret(spKeypair.privateKey, ephemeralReceivePreKey);
+    const [
+      dh1,
+      dh2
+    ] = await Promise.all([
+      cryptoHelper.deriveDHSecret(otpkPrivateKey, ephemeralSendPreKey),
+      cryptoHelper.deriveDHSecret(spKeypair.privateKey, ephemeralReceivePreKey)
+    ])
   
     const sharedKey = await cryptoHelper.deriveBytesHKDF(
       cryptoHelper.concatUint8Arrays(dh1, dh2),
