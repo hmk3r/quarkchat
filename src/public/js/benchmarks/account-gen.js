@@ -14,22 +14,34 @@ async function generateAccount(username) {
     signatureKeypair.privateKey
   );
   
-  const promises = [];
+  const promisesKeys = [];
   // one long-term SPK and the amount of OTPKS specified in the constants file
   const numberOfSignedKeysToGenerate = constants.OTPKS_AMOUNT + 1;
   for(let i = 0; i < numberOfSignedKeysToGenerate; i++) {
-    promises.push(get_dh_signed_key(signatureKeypair.privateKey))
+    promisesKeys.push(cryptoHelper.generateDHKeys())
   }
+  const keyPairs = await Promise.all(promisesKeys);
+
+  const promisesEnvelopes = [];
+  for(const keyPair of keyPairs) {
+    promisesEnvelopes.push(cryptoHelper.signInEnvelope(keyPair.publicKey, signatureKeypair.privateKey))
+  }
+
+  const envelopes = await Promise.all(promisesEnvelopes)
   const [
     _spk,
     ..._otpks
-  ] = await Promise.all(promises);
+  ] = keyPairs;
 
+  const [
+    _spkEnvelope,
+    ..._otpksEnvelopes
+  ] = envelopes;
   const otpks = {};
   let otpkIndex = 0;
 
-  for (const otpk of _otpks) {
-    otpks[otpkIndex.toString()] = cryptoHelper.uint8ArrayToBase64(otpk.envelope);
+  for (const otpkEnvelope of _otpksEnvelopes) {
+    otpks[otpkIndex.toString()] = cryptoHelper.uint8ArrayToBase64(otpkEnvelope);
     otpkIndex++;
   }
 
@@ -39,7 +51,7 @@ async function generateAccount(username) {
     publicKey: cryptoHelper.uint8ArrayToBase64(signatureKeypair.publicKey),
     spk: {
       id: 0,
-      envelope: cryptoHelper.uint8ArrayToBase64(_spk.envelope)
+      envelope: _spkEnvelope
     },
     otpks
   }

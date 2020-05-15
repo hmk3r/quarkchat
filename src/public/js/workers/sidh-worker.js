@@ -1,8 +1,8 @@
-importScripts('/libs/promise-worker/dist/promise-worker.register.min.js');
+importScripts('/libs/webworker-promise/dist/register.min.js');
 importScripts('/js/constants.js')
 importScripts('/libs/sidh/dist/sidh.js')
 
-registerPromiseWorker(function (data) {
+WebWorkerPromiseRegister(async function (data) {
   switch (data.type) {
     case constants.CRYPTO_WORKER_OPS.KEYGEN:
       return sidh.keyPair()
