@@ -661,12 +661,14 @@ async function bootstrapMessenger() {
     }
   })
 
-  window.addEventListener('beforeunload', function (event) {
+  function persistAppData(event) {
     localStorage.setItem('conversations', JSON.stringify(app.conversations));
     localStorage.setItem('conversationsOrder', JSON.stringify(app.conversationsOrder));
     localStorage.setItem('verifiedContacts', JSON.stringify(app.verifiedContacts));
     localStorage.setItem('drafts', JSON.stringify(app.drafts))
-  })
+  }
+
+  window.addEventListener('beforeunload', persistAppData)
 
   app.scrollToLatestMessage();
 
@@ -725,6 +727,7 @@ async function bootstrapMessenger() {
     }
 
     socket.disconnect(true)
+    window.removeEventListener('beforeunload', persistAppData);
     $('#app').hide();
 
     alert(`After the export finishes, Download the generated file and store it to your drive. Click 'Ok' to begin the export`);
