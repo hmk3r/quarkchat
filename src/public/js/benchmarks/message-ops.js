@@ -385,7 +385,7 @@ async function benchmarkMessaging() {
 
   const downloadButton = $('#messagingResultsDownload');
   downloadButton.prop('href', URL.createObjectURL(new Blob([JSON.stringify(times)], {type : 'application/json'})))
-  downloadButton.prop('download', `messageBenchmark-${runs}-${messageSize}-${navigator.userAgent.replace(/[/\\?%*:|"<>]/g, '-')}.json`)
+  downloadButton.prop('download', `multi-${constants.MAX_THREADS_PER_WORKER}-messageBenchmark-${runs}-${messageSize}-${navigator.userAgent.replace(/[/\\?%*:|"<>]/g, '-')}.json`)
   downloadButton.removeClass('disabled');
   downloadButton[0].click();
 }
