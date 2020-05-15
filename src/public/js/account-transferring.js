@@ -43,9 +43,6 @@ async function exportAccountToJson(password, shouldClearDatabase) {
       await databaseTables[dbTableName].clear()
     }
 
-    for (const lsi of localStorageItemsNames) {
-      app[lsi] = undefined;
-    }
     localStorage.clear()
   }
 
