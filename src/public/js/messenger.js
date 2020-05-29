@@ -119,8 +119,13 @@ async function getDmProcessor() {
       const otpkPrivateKey = await otpkStorage.getItem(keyBundleIds.otpk.toString());
       const spKeypair = await pkStorage.getItem(keyBundleIds.spk.toString());
 
-      const dh1 = await cryptoHelper.deriveDHSecret(otpkPrivateKey, ephemeralSendPreKey);
-      const dh2 = await cryptoHelper.deriveDHSecret(spKeypair.privateKey, ephemeralReceivePreKey);
+      const [
+        dh1,
+        dh2
+      ] = await Promise.all([
+        cryptoHelper.deriveDHSecret(otpkPrivateKey, ephemeralSendPreKey),
+        cryptoHelper.deriveDHSecret(spKeypair.privateKey, ephemeralReceivePreKey)
+      ])
 
       const sharedKey = await cryptoHelper.deriveBytesHKDF(
         cryptoHelper.concatUint8Arrays(dh1, dh2),
@@ -166,12 +171,21 @@ async function getDmProcessor() {
         throw new Error('Pre-keys are not authentic');
       }
 
-      const ephemeralSendPreKeyPair = await cryptoHelper.generateDHKeys();
-      const ephemeralReceivePreKeyPair = await cryptoHelper.generateDHKeys();
+      const [
+        ephemeralSendPreKeyPair,
+        ephemeralReceivePreKeyPair
+      ] = await Promise.all([
+        cryptoHelper.generateDHKeys(),
+        cryptoHelper.generateDHKeys()
+      ])
 
-      const dh1 = await cryptoHelper.deriveDHSecret(ephemeralSendPreKeyPair.privateKey, otpk);
-      const dh2 = await cryptoHelper.deriveDHSecret(ephemeralReceivePreKeyPair.privateKey, spk);
-
+      const [
+        dh1,
+        dh2
+      ] = await Promise.all([
+        cryptoHelper.deriveDHSecret(ephemeralSendPreKeyPair.privateKey, otpk),
+        cryptoHelper.deriveDHSecret(ephemeralReceivePreKeyPair.privateKey, spk)
+      ]);
       const sharedKey = await cryptoHelper.deriveBytesHKDF(
         cryptoHelper.concatUint8Arrays(dh1, dh2),
         new Uint8Array(cryptoHelper.HKDF_SHA_512.hashOutputLengthBytes),
@@ -457,17 +471,29 @@ async function submitOtpks() {
   try {
     const privateKey = await accountStorage.getItem(constants.PRIVATE_KEY_DB_FIELD);
 
+    const otpkKeyPairPromises = []
+    for(let i = 0; i < constants.OTPKS_AMOUNT; i++) {
+      otpkKeyPairPromises.push(cryptoHelper.generateDHKeys())
+    }
+
+    const otpkKeyPairs = await Promise.all(otpkKeyPairPromises);
+    const otpkEnvelopePromises = [];
+    for(const otpkKeyPair of otpkKeyPairs) {
+      otpkEnvelopePromises.push(cryptoHelper.signInEnvelope(otpkKeyPair.publicKey, privateKey))
+    }
+    const otpkEnvelopes = await Promise.all(otpkEnvelopePromises);
+
     const otpks = [];
+
     let otpkIndex = await accountStorage.getItem(constants.OTPK_INDEX_DB_FIELD);
-    for (let i = 0; i < constants.OTPKS_AMOUNT; i++, otpkIndex++) {
-      const dhKeyPair = await cryptoHelper.generateDHKeys();
-      const otpkEnvelope = await cryptoHelper.signInEnvelope(dhKeyPair.publicKey, privateKey);
+    for(const [index, keyPair] of otpkKeyPairs.entries()) {
+      otpkIndex++;
       otpks.push({
         id: otpkIndex,
-        envelope: cryptoHelper.uint8ArrayToBase64(otpkEnvelope)
+        envelope: cryptoHelper.uint8ArrayToBase64(otpkEnvelopes[index])
       })
       await accountStorage.setItem(constants.OTPK_INDEX_DB_FIELD, otpkIndex);
-      await otpkStorage.setItem(otpkIndex.toString(), dhKeyPair.privateKey);
+      await otpkStorage.setItem(otpkIndex.toString(), keyPair.privateKey);
     }
 
     await postJsonAuthenticated('/account/otpks', { otpks });
