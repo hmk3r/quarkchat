@@ -9,6 +9,16 @@ const cryptoHelper = (function () {
     length: 256
   }
 
+  const HKDF_SHA_512 = {
+    name: 'HKDF',
+    hash: 'SHA-512'
+  }
+
+  const HMAC_SHA_512 = {
+    name: 'HMAC',
+    hash: 'SHA-512'
+  }
+
   const _sidhWorker = new Worker('/js/workers/sidh-worker.js');
   const _sphincsWorker = new Worker('/js/workers/sphincs-worker.js');
   const sidhWorker = new PromiseWorker(_sidhWorker);
@@ -247,8 +257,55 @@ const cryptoHelper = (function () {
     return UTF8_DECODER.decode(message)
   }
 
+  async function deriveBytesHKDF(baseKey, salt, info, length, shouldDeriveBits) {
+    if (!baseKey.constructor || baseKey.constructor.name !== 'CryptoKey') {
+      baseKey = await crypto.subtle.importKey(
+        'raw',
+        baseKey,
+        HKDF_SHA_512,
+        false,
+        ['deriveBits']
+      );
+    }
+
+    if (typeof info === 'string') {
+      info = UTF8_ENCODER.encode(info);
+    }
+
+    if (!shouldDeriveBits) {
+      length *= 8
+    }
+
+    return crypto.subtle.deriveBits(
+      {
+        name: HKDF_SHA_512.name,
+        hash: HKDF_SHA_512.hash,
+        salt,
+        info
+      },
+      baseKey,
+      length
+    )
+  }
+
+  async function hmacSign(key, data) {
+    if (!baseKey.constructor || baseKey.constructor.name !== 'CryptoKey') {
+      key = await crypto.subtle.importKey(
+        'raw',
+        baseKey,
+        HMAC_SHA_512,
+        false,
+        ['sign']
+      );
+    }
+
+    return crypto.subtle.sign(HMAC_SHA_512, key, data)
+  }
+
   return {
     AES_256_GCM,
+    HKDF_SHA_512,
+    HMAC_SHA_512,
     UTF8_ENCODER,
     UTF8_DECODER,
     bufToHex,
@@ -276,5 +333,7 @@ const cryptoHelper = (function () {
     sign,
     openSignedEnvelope,
     verifySignature,
+    deriveBytesHKDF,
+    hmacSign,
   }
 })()
