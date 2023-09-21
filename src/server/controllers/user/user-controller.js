@@ -45,7 +45,10 @@ module.exports = function(params) {
     const invalidUsernameError = new Error('Invalid username');
     invalidUsernameError.public = true;
 
-    if (!validator.validateString(username, 3, 30)) {
+    if (
+      !validator.validateString(username, 3, 30) ||
+      !validator.validateStringAlphaNum()
+    ) {
       return next(invalidUsernameError);
     }
 

@@ -1,7 +1,10 @@
 <!-- Messenger template due to sunil8107(https://bootsnipp.com/sunil8107)
 https://bootsnipp.com/snippets/1ea0N
 -->
-<link rel="stylesheet" href="/css/messenger.css">
+<style>
+  .container{max-width:1170px; margin:auto;}
+  img{ max-width:100%;}
+</style>
 <div id="app" class="container">
   <h3 class=" text-center">Quark Chat</h3>
   <div class="messaging">
@@ -13,17 +16,17 @@ https://bootsnipp.com/snippets/1ea0N
           </div>
           <div class="srch_bar">
             <div class="stylish-input-group">
-              <input type="text" class="search-bar" placeholder="Search">
+              <input type="text" class="search-bar" placeholder="Add by username..." pattern="^[A-Za-z0-9]{3,30}$">
               <span class="input-group-addon">
-                <button type="button"> <i class="fa fa-search" aria-hidden="true"></i> </button>
+                <button type="button"> <i class="fa fa-user-plus"></i></button>
               </span> </div>
           </div>
         </div>
         <div class="inbox_chat">
           <template v-for="recipientUsername in conversations">
-            <div class="chat_list" :class="{ 'active_chat': recipientUsername === activeConversationRecipient }" v-bind:key="recipientUsername" @click="activeConversationRecipient = recipientUsername">
+            <div class="chat_list" :class="{ 'active_chat': recipientUsername === activeConversationRecipient }" @click="switchConversation(recipientUsername)">
               <div class="chat_people">
-                <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
+                <div class="chat_img"> <img src="/images/avatar.png" alt="avatar"> </div>
                 <div class="chat_ib">
                   <h5>{{ recipientUsername }}<span class="chat_date">{{messages[recipientUsername][messages[recipientUsername].length - 1]['date']}}</span></h5>
                   <p>{{ messages[recipientUsername][messages[recipientUsername].length - 1]['content']}}</p>
@@ -55,10 +58,20 @@ https://bootsnipp.com/snippets/1ea0N
           </template>
         </div>
         <div class="type_msg">
+          <form action="javascript:void(0);" method="post">
           <div class="input_msg_write">
-            <input type="text" class="write_msg" placeholder="Type a message" />
-            <button class="msg_send_btn" type="button"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>
+            <div class="form-group">
+              <input type="text" id="messageComposer" 
+              class="form-control write_msg" style="resize: none; width: 93%;"
+              placeholder="Type a message..."
+              :username="activeConversationRecipient"
+              :value="drafts[activeConversationRecipient]"/>
+            </div>
+            <div class="form-group">
+              <button class="msg_send_btn" type="button"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>
+            </div>
           </div>
+        </form>
         </div>
       </div>
     </div>
@@ -72,31 +85,49 @@ https://bootsnipp.com/snippets/1ea0N
   let conversations = ['Jane Doe', 'John Doe']
   let messages = {
   'Jane Doe': [
-  {type: 'in', content: 'AAAAAAAAAAAAAAAAAAAAAAAAa', date: new Date().toLocaleDateString()},
-    {type: 'in', content: 'a?', date: new Date().toLocaleDateString()},
-    {type: 'in', content: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA     '.repeat(50), date: new Date().toLocaleDateString()},
-    {type: 'in', content: 'a', date: new Date().toLocaleDateString()},
-    {type: 'out', content: '???????', date: new Date().toLocaleDateString()},
-    {type: 'in', content: '!', date: new Date().toLocaleDateString()},
-    {type: 'in', content: '!', date: new Date().toLocaleDateString()},
-    {type: 'out', content: '!', date: new Date().toLocaleDateString()},
-  ],
-  'John Doe': [
-    {type: 'in', content: 'Hello', date: new Date().toLocaleDateString()},
-    {type: 'in', content: 'Are you there?', date: new Date().toLocaleDateString()},
-    {type: 'in', content: 'ASDFASFASDSA', date: new Date().toLocaleDateString()},
-    {type: 'in', content: 'QWERT', date: new Date().toLocaleDateString()},
-    {type: 'out', content: 'Works'.repeat(21), date: new Date().toLocaleDateString()},
-    {type: 'in', content: 'Does it now?', date: new Date().toLocaleDateString()},
-  ]
-}
+      {type: 'in', content: 'AAAAAAAAAAAAAAAAAAAAAAAAa', date: new Date().toLocaleDateString()},
+      {type: 'in', content: 'a?', date: new Date().toLocaleDateString()},
+      {type: 'in', content: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA     '.repeat(50), date: new Date().toLocaleDateString()},
+      {type: 'in', content: 'a', date: new Date().toLocaleDateString()},
+      {type: 'out', content: '???????', date: new Date().toLocaleDateString()},
+      {type: 'in', content: '!', date: new Date().toLocaleDateString()},
+      {type: 'in', content: '!', date: new Date().toLocaleDateString()},
+      {type: 'out', content: '!', date: new Date().toLocaleDateString()},
+    ],
+    'John Doe': [
+      {type: 'in', content: 'Hello', date: new Date().toLocaleDateString()},
+      {type: 'in', content: 'Are you there?', date: new Date().toLocaleDateString()},
+      {type: 'in', content: 'ASDFASFASDSA', date: new Date().toLocaleDateString()},
+      {type: 'in', content: 'QWERT', date: new Date().toLocaleDateString()},
+      {type: 'out', content: 'Works'.repeat(21), date: new Date().toLocaleDateString()},
+      {type: 'in', content: 'Does it now?', date: new Date().toLocaleDateString()},
+    ]
+  }
+  const draftsJson = localStorage.getItem('drafts');
+  let drafts = draftsJson ? JSON.parse(draftsJson) : {};
 
-let app = new Vue({
-el: '#app',
-data: {
-  activeConversationRecipient: conversations[0],
-  conversations,
-  messages
-}
-})
+  let app = new Vue({
+    el: '#app',
+    data: {
+      activeConversationRecipient: conversations[0],
+      conversations,
+      messages,
+      drafts,
+    },
+    methods: {
+      switchConversation: function(username) {
+        const messageComposer = $('#messageComposer');
+        const draft = messageComposer.val();
+        const draftUsername = messageComposer.attr('username');
+        this.activeConversationRecipient = username;
+        this.drafts[draftUsername] = draft;
+      }
+    }
+  })
+
+  $('#messageComposer').focus();
+
+  window.addEventListener('beforeunload', function(event) {
+    localStorage.setItem('drafts', JSON.stringify(app.drafts))
+  })
 </script>
