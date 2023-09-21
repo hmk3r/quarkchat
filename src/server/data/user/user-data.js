@@ -12,7 +12,7 @@ module.exports = function(models, params) {
    * @return {boolean}
    */
   async function usernameExists(username) {
-    return User.exists({username});
+    return User.exists({username: username.toLowerCase()});
   }
 
 
@@ -24,7 +24,7 @@ module.exports = function(models, params) {
    * @return {UserModel}
    */
   async function getUserByUsername(username) {
-    return User.findOne({username});
+    return User.findOne({username: username.toLowerCase()});
   }
 
   /**
@@ -40,7 +40,7 @@ module.exports = function(models, params) {
    */
   async function createUser(username, publicKey, spk, otpks) {
     return User.create({
-      username,
+      username: username.toLowerCase(),
       public_key: publicKey,
       spk,
       otpks,

@@ -44,3 +44,7 @@ async function getJson(url = '') {
 function timeout(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+Date.prototype.toLocaleDateTimeString = function() {
+  return moment(this).format('HH:mm   |   MMM DD YYYY')
+}
