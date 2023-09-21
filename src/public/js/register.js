@@ -1,25 +1,27 @@
 async function generateAccount(username) {
-  const signatureKeypair = await cryptoHelper.generateSignatureKeys();
+  username = username.toLowerCase();
+  const signatureKeypair = await cryptoHelper.generateSignatureKeys(true);
   await accountStorage.setItem(constants.PRIVATE_KEY_DB_FIELD, signatureKeypair.privateKey);
   await accountStorage.setItem(constants.PUBLIC_KEY_DB_FIELD, signatureKeypair.publicKey)
 
-  const pkKeypair = await cryptoHelper.generateDHKeys();
+  const pkKeypair = await cryptoHelper.generateDHKeys(true);
   await accountStorage.setItem(constants.SPK_INDEX_DB_FIELD, constants.DEFAULT_INDEX);
   const pkIndex = await accountStorage.getItem(constants.SPK_INDEX_DB_FIELD);
   await pkStorage.setItem(pkIndex.toString(), pkKeypair);
 
-  const spkEnvelope = await cryptoHelper.signInEnvelope(pkKeypair.publicKey, signatureKeypair.privateKey);
+  const spkEnvelope = await cryptoHelper.signInEnvelope(pkKeypair.publicKey, signatureKeypair.privateKey, true);
   
   const usernameSignature = await cryptoHelper.sign(
     cryptoHelper.base64ToUint8Array(window.btoa(username)),
-    signatureKeypair.privateKey
+    signatureKeypair.privateKey,
+    true
   );
   
   const otpks = [];
   let otpkIndex = constants.DEFAULT_INDEX;
   for (let i = 0; i < constants.OTPKS_AMOUNT; i++, otpkIndex++) {
-    const dhKeyPair = await cryptoHelper.generateDHKeys();
-    const otpkEnvelope = await cryptoHelper.signInEnvelope(dhKeyPair.publicKey, signatureKeypair.privateKey);
+    const dhKeyPair = await cryptoHelper.generateDHKeys(true);
+    const otpkEnvelope = await cryptoHelper.signInEnvelope(dhKeyPair.publicKey, signatureKeypair.privateKey, true);
     otpks.push({
       id: otpkIndex,
       envelope: cryptoHelper.uint8ArrayToBase64(otpkEnvelope)

@@ -24,7 +24,7 @@ module.exports = function(params) {
       const dbChallenge = await data.createChallenge(
           username,
           challenge,
-          dateUtils.getMsTimestamp(),
+          dateUtils.getMsTimestamp() + config.challengeTimeout,
       );
 
       return res.json({challenge: dbChallenge.value});
@@ -72,7 +72,7 @@ module.exports = function(params) {
       }
 
       const dbChallenge = await data.getChallenge(username, challenge);
-      if (dbChallenge.expires + config.challengeTimeout < now) {
+      if (dbChallenge.expires < now) {
         await data.deleteChallenge(dbChallenge);
         const error = new Error('Expired challenge');
         error.public = true;

@@ -12,6 +12,7 @@
     "keypair",
     "keypress",
     "localforage",
+    "lowercase",
     "onetimeprekeys",
     "otpk",
     "otpks",
@@ -22,6 +23,7 @@
     "sphincs",
     "spks",
     "stateskeys",
-    "toastr"
+    "toastr",
+    "upsert"
   ]
 }

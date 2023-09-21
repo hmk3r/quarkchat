@@ -38,11 +38,17 @@ const cryptoHelper = (function () {
     crypto.subtle = crypto.webkitSubtle; //for Safari
   }
 
-  async function generateSignatureKeys() {
+  async function generateSignatureKeys(useWorker = true) {
+    if (!useWorker) {
+      return sphincs.keyPair();
+    }
     return sphincsWorker.postMessage({type: constants.CRYPTO_WORKER_OPS.KEYGEN});
   }
 
-  async function signInEnvelope(message, privateKey) {
+  async function signInEnvelope(message, privateKey, useWorker = true) {
+    if (!useWorker) {
+      return sphincs.sign(message, privateKey);
+    }
     return sphincsWorker.postMessage({
       type: constants.CRYPTO_WORKER_OPS.SIGN,
       message,
@@ -50,7 +56,10 @@ const cryptoHelper = (function () {
     });
   }
 
-  async function sign(message, privateKey) {
+  async function sign(message, privateKey, useWorker = true) {
+    if (!useWorker) {
+      return sphincs.signDetached(message, privateKey)
+    }
     return sphincsWorker.postMessage({
       type: constants.CRYPTO_WORKER_OPS.SIGN_DETACHED,
       message,
@@ -58,7 +67,10 @@ const cryptoHelper = (function () {
     });
   }
 
-  async function openSignedEnvelope(envelope, publicKey) {
+  async function openSignedEnvelope(envelope, publicKey, useWorker = true) {
+    if (!useWorker) {
+      return sphincs.open(envelope, publicKey);
+    }
     return sphincsWorker.postMessage({
       type: constants.CRYPTO_WORKER_OPS.OPEN,
       signed: envelope,
@@ -66,7 +78,10 @@ const cryptoHelper = (function () {
     });
   }
 
-  async function verifySignature(signature, message, publicKey) {
+  async function verifySignature(signature, message, publicKey, useWorker = true) {
+    if (!useWorker) {
+      sphincs.verifyDetached(signature, message, publicKey);
+    }
     return sphincsWorker.postMessage({
       type: constants.CRYPTO_WORKER_OPS.VERIFY_DETACHED,
       signature,
@@ -75,11 +90,17 @@ const cryptoHelper = (function () {
     });
   }
 
-  async function generateDHKeys() {
+  async function generateDHKeys(useWorker = true) {
+    if (!useWorker) {
+      return sidh.keyPair();
+    }
     return sidhWorker.postMessage({type: constants.CRYPTO_WORKER_OPS.KEYGEN});
   }
 
-  async function deriveDHSecret(localPrivateKey, remotePublicKey) {
+  async function deriveDHSecret(localPrivateKey, remotePublicKey, useWorker = true) {
+    if (!useWorker) {
+      return sidh.secret(remotePublicKey, localPrivateKey);
+    }
     return sidhWorker.postMessage({
       type: constants.CRYPTO_WORKER_OPS.DERIVE_SECRET,
       remotePublicKey,
@@ -146,15 +167,15 @@ const cryptoHelper = (function () {
   }
 
   function concatUint8Arrays(...arrays) {
-    const concat = new Uint8Array(arrays.reduce((accumulator, arr) => accumulator + arr.byteLength));
+    const concat = new Uint8Array(arrays.reduce((accumulator, arr) => {return accumulator + arr.byteLength || arr.length}, 0));
     for (let i = 0; i < arrays.length; i++) {
-      concat.set(arrays[i], i === 0 ? 0 : arrays[i].byteLength);
+      concat.set(arrays[i], i === 0 ? 0 : arrays[i - 1].byteLength || arrays[i - 1].length);
     }
     return concat;
   }
 
   function concatArrayBuffers(...buffers) {
-    return concatUint8Arrays(buffers.map((b) => new Uint8Array(b))).buffer;
+    return concatUint8Arrays(...buffers.map((b) => new Uint8Array(b))).buffer;
   }
 
   // adapted from https://stackoverflow.com/a/44831114
@@ -312,6 +333,7 @@ const cryptoHelper = (function () {
   }
 
   async function hmacSign(key, data) {
+    if (!key) console.log((new Error()).stack)
     if (!key.constructor || key.constructor.name !== 'CryptoKey') {
       key = await crypto.subtle.importKey(
         'raw',
@@ -426,13 +448,13 @@ const cryptoHelper = (function () {
       ['decrypt']
     );;
 
-    const plaintext = await crypto.subtle.encrypt(
+    const plaintext = await crypto.subtle.decrypt(
       {
         name: AES_256_CBC.name,
         iv
       },
       aesKey,
-      data
+      ciphertext
     );
 
     return plaintext;
