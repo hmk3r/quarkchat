@@ -1,6 +1,6 @@
 const connectionStrings = {
   production: process.env.CONNECTION_STRING,
-  development: 'mongodb://localhost/QuarkChat',
+  development: 'mongodb://localhost/QuarkChatDB',
 };
 
 module.exports = {
