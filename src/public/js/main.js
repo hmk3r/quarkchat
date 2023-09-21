@@ -70,8 +70,6 @@ async function generateAccount(username) {
   await accountStorage.setItem(constants.SPK_INDEX_DB_FIELD, constants.DEFAULT_INDEX);
   const pkIndex = await accountStorage.getItem(constants.SPK_INDEX_DB_FIELD);
   await accountStorage.setItem(constants.SPKS_DB_FIELD, {id: pkIndex, privateKey: pkKeypair.privateKey});
-  
-  await timeout(10);
 
   const spkEnvelope = await cryptoHelper.signInEnvelope(pkKeypair.publicKey, signatureKeypair.privateKey);
   
@@ -88,8 +86,6 @@ async function generateAccount(username) {
     const otpkEnvelope = await cryptoHelper.signInEnvelope(dhKeyPair.publicKey, signatureKeypair.privateKey);
     otpks[otpkIndex.toString()] = cryptoHelper.uint8ArrayToBase64(otpkEnvelope);
     otpksPrivate[otpkIndex] = dhKeyPair.privateKey;
-    // Prevent freezing
-    await timeout(10);
   }
 
   await accountStorage.setItem(constants.OTPK_INDEX_DB_FIELD, otpkIndex);

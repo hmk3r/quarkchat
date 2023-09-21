@@ -1,5 +1,13 @@
 const constants = (function() {
   return {
+    CRYPTO_WORKER_OPS: {
+      KEYGEN: 'keygen',
+      SIGN: 'sign',
+      SIGN_DETACHED: 'signDetached',
+      OPEN: 'open',
+      VERIFY_DETACHED: 'verifyDetached',
+      DERIVE_SECRET: 'deriveSecret',
+    },
     USERNAME_DB_FIELD: 'username',
     PRIVATE_KEY_DB_FIELD: 'privateKey',
     PUBLIC_KEY_DB_FIELD: 'publicKey',

@@ -9,6 +9,11 @@ const cryptoHelper = (function () {
     length: 256
   }
 
+  const _sidhWorker = new Worker('/js/workers/sidh-worker.js');
+  const _sphincsWorker = new Worker('/js/workers/sphincs-worker.js');
+  const sidhWorker = new PromiseWorker(_sidhWorker);
+  const sphincsWorker = new PromiseWorker(_sphincsWorker);
+
   const UTF8_ENCODER = new TextEncoder('utf-8')
   const UTF8_DECODER = new TextDecoder('utf-8')
   const ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#*?_'
@@ -20,31 +25,52 @@ const cryptoHelper = (function () {
   }
 
   async function generateSignatureKeys() {
-    return sphincs.keyPair();
+    return sphincsWorker.postMessage({type: constants.CRYPTO_WORKER_OPS.KEYGEN});
   }
 
   async function signInEnvelope(message, privateKey) {
-    return sphincs.sign(message, privateKey);
+    return sphincsWorker.postMessage({
+      type: constants.CRYPTO_WORKER_OPS.SIGN,
+      message,
+      privateKey
+    });
   }
 
   async function sign(message, privateKey) {
-    return sphincs.signDetached(message, privateKey);
+    return sphincsWorker.postMessage({
+      type: constants.CRYPTO_WORKER_OPS.SIGN_DETACHED,
+      message,
+      privateKey
+    });
   }
 
   async function openSignedEnvelope(envelope, publicKey) {
-    return sphincs.open(envelope, publicKey);
+    return sphincsWorker.postMessage({
+      type: constants.CRYPTO_WORKER_OPS.OPEN,
+      signed: envelope,
+      publicKey
+    });
   }
 
   async function verifySignature(signature, message, publicKey) {
-    return sphincs.verifyDetached(signature, message, publicKey);
+    return sphincsWorker.postMessage({
+      type: constants.CRYPTO_WORKER_OPS.VERIFY_DETACHED,
+      signature,
+      message,
+      publicKey
+    });
   }
 
   async function generateDHKeys() {
-    return sidh.keyPair();
+    return sidhWorker.postMessage({type: constants.CRYPTO_WORKER_OPS.KEYGEN});
   }
 
   async function deriveDHSecret(localPrivateKey, remotePublicKey) {
-    return sidh.secret(remotePublicKey, localPrivateKey);
+    return sidhWorker.postMessage({
+      type: constants.CRYPTO_WORKER_OPS.DERIVE_SECRET,
+      remotePublicKey,
+      localPrivateKey
+    });
   }
 
   // https://stackoverflow.com/a/40031979
