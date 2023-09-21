@@ -16,8 +16,8 @@ module.exports = {
   challengeTimeout: process.env.CHALLENGE_TIMEOUT || 60 * 1000, // 60 seconds
   // renewal time for signed pre-key
   spkRenewalInterval: {
-    value: process.env.SPK_RENEWAL_INTERVAL_VALUE || 1,
-    unit: process.env.SPK_RENEWAL_INTERVAL_UNIT || 'M',
+    value: process.env.SPK_RENEWAL_INTERVAL_VALUE || 2,
+    unit: process.env.SPK_RENEWAL_INTERVAL_UNIT || 'd',
   },
   lowOtpkWarningThreshold: process.env.LOW_OTPK_WARNING_THRESHOLD || 5,
 };
