@@ -21,6 +21,17 @@ function walkDirectorySync(currentDirPath, callback) {
   });
 }
 
+/**
+ * Reads a file
+ *
+ * @param {Array<String>} paths
+ * @return {File}
+ */
+function readFileSync(...paths) {
+  return fs.readFileSync(path.join(...paths));
+}
+
 module.exports = {
   walkDirectorySync,
+  readFileSync,
 };

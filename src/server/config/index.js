@@ -19,5 +19,6 @@ module.exports = {
     value: process.env.SPK_RENEWAL_INTERVAL_VALUE || 1,
     unit: process.env.SPK_RENEWAL_INTERVAL_UNIT || 'M',
   },
+  lowOtpkWarningThreshold: process.env.LOW_OTPK_WARNING_THRESHOLD || 5,
 };
 

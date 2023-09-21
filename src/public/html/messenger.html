@@ -41,6 +41,25 @@ https://bootsnipp.com/snippets/1ea0N
         </div>
       </div>
       <div class="mesgs">
+        <div class="btn-group" style="display: flex; justify-content: flex-end; margin-bottom: .3rem;">
+          <template v-if="activeConversationRecipient">
+          <button v-if="verifiedContacts[activeConversationRecipient]" id="showAdditionalDataRandomart" type="button" role="button" class="btn btn-sm btn-success" data-toggle="dropdown" @click="showADRandomart(activeConversationRecipient)">
+            <span class="fa fa-lock"></span>&nbsp;Trusted
+          </button>
+          <button v-else="" id="showAdditionalDataRandomart" type="button" role="button" class="btn btn-sm btn-danger" data-toggle="dropdown" @click="showADRandomart(activeConversationRecipient)">
+            <span class="fa fa-unlock"></span>&nbsp;Not trusted (Click here and compare with {{activeConversationRecipient}} to trust)
+          </button>
+          <div class="dropdown-menu" aria-labelledby="showAdditionalDataRandomart">
+            <div id="randomart" style="font-family: monospace; white-space: pre;"></div>
+            <form method="POST" action="javascript:void(0);" style="display: flex; justify-content: center; margin-top: .3rem;" id="trustForm">
+              <div class="custom-control custom-checkbox" >
+                <input type="checkbox" class="custom-control-input" id="trust" @click="changeTrustState(activeConversationRecipient, $event)">
+                <label class="custom-control-label" for="trust">Trust</label>
+              </div>
+            </form> 
+          </div>
+          </template>
+        </div>
         <div class="msg_history scrollbar">
           <template v-for="(message, index) in messages[activeConversationRecipient]" >
             <div v-if="message.type === 'in'" class="incoming_msg" :id="index === messages[activeConversationRecipient].length - 1 ? 'latestMessage' : ''">
