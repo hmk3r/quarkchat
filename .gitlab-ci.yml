@@ -1,0 +1,16 @@
+stages:
+  - test
+
+Unit tests:
+  stage: test
+  image: node:12.16.2
+  cache:
+    paths:
+      - node_modules/
+  script:
+    - npm i npm@latest -g
+    - npm i
+    - npm test
+  coverage: 
+    '/Statements.*?(\d+(?:\.\d+)?)%/'
+
