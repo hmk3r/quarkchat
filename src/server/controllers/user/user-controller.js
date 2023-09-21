@@ -86,13 +86,10 @@ module.exports = function(params) {
 
     let invalidOtpkId;
     try {
-      for (const otpkId in otpks) {
-        if (!otpks.hasOwnProperty(otpkId)) {
-          continue;
-        }
-        invalidOtpkId = otpkId;
+      for (const otpk of otpks) {
+        invalidOtpkId = otpk.id;
         await cryptoUtils.openSignedEnvelope(
-            otpks[otpkId],
+            otpk.envelope,
             publicKey,
         );
       };
@@ -106,11 +103,7 @@ module.exports = function(params) {
     try {
       await data.createUser(username, publicKey, spk, otpks);
     } catch (e) {
-      const error =
-        new Error(e.name);
-      error.public = true;
-      console.log(e.message.substring(0, 100));
-      return next(error);
+      return next(e);
     }
 
     return res.status(200).json({});

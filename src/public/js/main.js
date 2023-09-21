@@ -1,8 +1,3 @@
-const socket = io();
-socket.on('socket_id', (socketId) => {
-  console.log('Socket ID: ', socketId);
-})
-
 toastr.options = {
   'closeButton': true,
   'debug': false,

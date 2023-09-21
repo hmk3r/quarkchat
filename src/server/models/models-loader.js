@@ -6,7 +6,7 @@ module.exports = function() {
   fileWalker(__dirname, (modelFile) => {
     if (modelFile.includes('-model')) {
       const model = require(modelFile);
-      models[model.name] = model.schema;
+      models[model.name] = model;
     }
   });
   return models;

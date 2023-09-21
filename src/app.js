@@ -9,7 +9,11 @@ const HttpServer = require('http').Server;
 // Application bootstrap
 
 // Data layer and express app
-const data = require('./server/data')(config.connectionString, {validator});
+const data = require('./server/data')(config.connectionString, {
+  validator,
+  cryptoUtils,
+  dateUtils,
+});
 const app = require('./server/config/app')({data});
 
 // Socket setup
@@ -32,3 +36,6 @@ require('./server/config/app/post-routes-config')(app, {config});
 server.listen(config.port, () => {
   console.log(`App running on localhost:${server.address().port}`);
 });
+
+// Schedule jobs
+// require('./server/utils/scheduled-tasks')({data, dateUtils, config});

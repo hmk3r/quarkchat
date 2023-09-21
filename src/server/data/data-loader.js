@@ -26,10 +26,15 @@ module.exports = function(connectionString, params) {
     // skip over prototype properties
     if (!models.hasOwnProperty(modelName)) continue;
 
-    const schema = new MongooseSchema(models[modelName], {
+    const schema = new MongooseSchema(models[modelName].schema, {
       timestamps: true,
     });
 
+    if (models[modelName].indexes) {
+      for (const index of models[modelName].indexes) {
+        schema.index(index.fields, index.options);
+      }
+    }
     mongooseModels[modelName] = mongoose.model(modelName, schema);
   }
 
