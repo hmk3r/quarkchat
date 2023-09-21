@@ -19,7 +19,6 @@ function _parseHeader(headerString) {
 }
 
 async function _tickDHRatchet(state, header) {
-  console.log(`ticking ${state.initiator}:${state.recipient}`);
   state.received = true;
   state.previousChainLength = state.messageNumberSend;
   state.messageNumberSend = 0;
@@ -33,10 +32,8 @@ async function _tickDHRatchet(state, header) {
     `tickDHRatchet:${state.initiator}:${state.recipient}`
   )
   
-  console.log(derivedBytesReceive);
   state.rootKey = derivedBytesReceive.slice(0, 32);
   state.chainKeyReceive = derivedBytesReceive.slice(32, 64);
-  console.log(state.chainKeyReceive)
   const dhSendKeypair = await cryptoHelper.generateDHKeys();
   state.dhSendPrivateKey = dhSendKeypair.privateKey;
   state.dhSendPublicKey = dhSendKeypair.publicKey;
@@ -179,8 +176,6 @@ async function ratchetDecrypt(state, headerAndCiphertext, additionalData) {
     messageKey = state.skippedMessageKeys[receivedMessageStateHash]
     delete state.skippedMessageKeys[receivedMessageStateHash]
   } else {
-    console.log('State', dhReceiveHashState)
-    console.log('Header', dhReceiveHashHeader)
     if (!dhReceiveHashState) {
       await _tickDHRatchet(state, header);
     } else if (dhReceiveHashHeader !== dhReceiveHashState) {

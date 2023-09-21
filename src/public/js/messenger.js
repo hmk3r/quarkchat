@@ -367,6 +367,11 @@ async function sendMessage(app, dmProcessor, recipient, message) {
     text: message,
     date: new Date()
   }
+  
+  const isFirstMessage = !(await contactsADStorage.getItem(recipient));
+  if (isFirstMessage) {
+    toastr.info('This might take some time, as keys must be established', `Sending first message to ${recipient}`)
+  }
 
   try {
     app.addMessageToUser(recipient, {
@@ -379,11 +384,12 @@ async function sendMessage(app, dmProcessor, recipient, message) {
       recipient.toLowerCase(),
       JSON.stringify(messageBody)
     )
-
     await postJsonAuthenticated('/messaging/send-message', encryptedMessage)
+    if (isFirstMessage) {
+      toastr.success(`The first message to ${recipient} was sent successfully`, `Message sent`)
+    }
   } catch (e) {
     throw e;
-    console.error(e)
   }
 }
 
