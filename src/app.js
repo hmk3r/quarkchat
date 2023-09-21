@@ -14,8 +14,9 @@ const server = new HttpServer(app);
 const io = require('./server/config/socket')(server);
 
 // Controllers and routes
-const controllers = require('./server/controllers')({data, io});
+const controllers = require('./server/controllers')({data, io, validator});
 require('./server/routes')(app, controllers, {});
+require('./server/config/app/post-routes-config')(app, {config});
 
 // Start server
 server.listen(config.port, () => {

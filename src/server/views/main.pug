@@ -28,7 +28,9 @@ html(lang='en', style='height: 100%')
                 legend: strong.text-info Register
               div.form-group
                 label Username:
-                input.form-control(name='username', placeholder="Username", autofocus)
+                input.form-control(id='username' name='username', placeholder='Username')
+                div.valid-feedback Looks good!
+                div#usernameFeedback.invalid-feedback Invalid username
 
               div.form-actions
                 input.btn.btn-primary.float-right(type='submit', value='Register')
