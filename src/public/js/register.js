@@ -4,30 +4,49 @@ async function generateAccount(username) {
   await accountStorage.setItem(constants.PRIVATE_KEY_DB_FIELD, signatureKeypair.privateKey);
   await accountStorage.setItem(constants.PUBLIC_KEY_DB_FIELD, signatureKeypair.publicKey)
 
-  const pkKeypair = await cryptoHelper.generateDHKeys(true);
-  await accountStorage.setItem(constants.SPK_INDEX_DB_FIELD, constants.DEFAULT_INDEX);
-  const pkIndex = await accountStorage.getItem(constants.SPK_INDEX_DB_FIELD);
-  await pkStorage.setItem(pkIndex.toString(), pkKeypair);
-
-  const spkEnvelope = await cryptoHelper.signInEnvelope(pkKeypair.publicKey, signatureKeypair.privateKey, true);
-  
   const usernameSignature = await cryptoHelper.sign(
     cryptoHelper.base64ToUint8Array(window.btoa(username)),
     signatureKeypair.privateKey,
     true
   );
-  
+
+  // one long-term SPK and the amount of OTPKS specified in the constants file
+  const numberOfSignedKeysToGenerate = constants.OTPKS_AMOUNT + 1;
+  const keyPairsPromises = [];
+  for (let i = 0; i < numberOfSignedKeysToGenerate; i++) {
+    keyPairsPromises.push(cryptoHelper.generateDHKeys())
+  }
+  const keyPairs = await Promise.all(keyPairsPromises);
+
+  const envelopePromises = [];
+  for (const keyPair of keyPairs) {
+    envelopePromises.push(cryptoHelper.signInEnvelope(keyPair.publicKey, signatureKeypair.privateKey, true))
+  }
+
+  const [
+    spkEnvelope,
+    ...otpkEnvelopes
+  ] = await Promise.all(envelopePromises);
+
+  const [
+    spkKeyPair,
+    ...otpkKeyPairs
+  ] = keyPairs;
+
+  const spkIndex = constants.DEFAULT_INDEX;
+  await pkStorage.setItem(spkIndex.toString(), spkKeyPair);
+  await accountStorage.setItem(constants.SPK_INDEX_DB_FIELD, spkIndex);
+
   const otpks = [];
   let otpkIndex = constants.DEFAULT_INDEX;
-  for (let i = 0; i < constants.OTPKS_AMOUNT; i++, otpkIndex++) {
-    const dhKeyPair = await cryptoHelper.generateDHKeys(true);
-    const otpkEnvelope = await cryptoHelper.signInEnvelope(dhKeyPair.publicKey, signatureKeypair.privateKey, true);
+  for(const [index, keyPair] of otpkKeyPairs.entries()) {
     otpks.push({
       id: otpkIndex,
-      envelope: cryptoHelper.uint8ArrayToBase64(otpkEnvelope)
+      envelope: cryptoHelper.uint8ArrayToBase64(otpkEnvelopes[index])
     })
     await accountStorage.setItem(constants.OTPK_INDEX_DB_FIELD, otpkIndex);
-    await otpkStorage.setItem(otpkIndex.toString(), dhKeyPair.privateKey);
+    await otpkStorage.setItem(otpkIndex.toString(), keyPair.privateKey);
+    otpkIndex++;
   }
 
   await accountStorage.setItem(constants.USERNAME_DB_FIELD, username);
@@ -37,7 +56,7 @@ async function generateAccount(username) {
     usernameSignature: cryptoHelper.uint8ArrayToBase64(usernameSignature),
     publicKey: cryptoHelper.uint8ArrayToBase64(signatureKeypair.publicKey),
     spk: {
-      id: pkIndex,
+      id: spkIndex,
       envelope: cryptoHelper.uint8ArrayToBase64(spkEnvelope)
     },
     otpks
