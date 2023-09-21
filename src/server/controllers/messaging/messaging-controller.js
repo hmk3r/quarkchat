@@ -72,9 +72,8 @@ module.exports = function(params) {
       await data.addContactToUser(recipient, requester.username);
       const remainingOtpks = await data.getOtpkCount(recipient.username);
       if (remainingOtpks <= config.lowOtpkWarningThreshold) {
-        console.log(`${recipient.username} has low (${remainingOtpks} otpks`);
+        await data.createOTPKSLowMessage(recipient.username);
       }
-      // Add check for remaining OTPKS, add message to user if < some constant
       res.json({
         username: recipient.username,
         publicKey: recipient.public_key,
@@ -104,8 +103,9 @@ module.exports = function(params) {
 
     try {
       const dms = await data.getDMs(username);
+      const serviceMessages = await data.getServiceMessages(username);
       await data.deleteMessages(dms);
-      return res.json(dms || []);
+      return res.json(serviceMessages.concat(dms) || []);
     } catch (e) {
       return next(e);
     }
@@ -138,7 +138,9 @@ module.exports = function(params) {
           challenge,
           dateUtils.getMsTimestamp() + config.challengeTimeout,
       );
-      io.to(recipientSocketId).emit('new_message', challenge);
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit('new_message', challenge);
+      }
       return res.json({});
     } catch (e) {
       return next(e);

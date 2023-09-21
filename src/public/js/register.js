@@ -45,10 +45,9 @@ async function generateAccount(username) {
 }
 
 function bootstrapRegisterPage() {
-  
+  let is_submitting = false;
   $("#username").on('change keyup paste input blur', event => {
     const username = event.currentTarget.value;
-    let validationResult = Promise.resolve();
   
     if (!(/^[A-Za-z0-9]{3,30}$/.test(username))) {
       validationResult = Promise.resolve('Username must be alphanumeric, between 3 and 30 characters')
@@ -66,7 +65,8 @@ function bootstrapRegisterPage() {
   
     
     return validationResult.then(errorMessage => {
-      if (errorMessage) {
+      if (is_submitting) {
+      } else if (errorMessage) {
         $('#registerSubmitBtn').prop('disabled', true)
         $(event.currentTarget).removeClass('is-valid');
         $(event.currentTarget).addClass('is-invalid');
@@ -85,9 +85,10 @@ function bootstrapRegisterPage() {
     const usernameInput = $("#username");
     const inputs = $(event.currentTarget).find('input, button');
     const loadingSpinner = $('#loadingSpinner');
-  
+
     // Validation short-cut
     usernameInput.triggerHandler('blur').then(() => {
+      is_submitting = true;
       if(usernameInput.hasClass('is-invalid')) {
         throw new Error('Please enter a valid username');
       }
@@ -104,6 +105,7 @@ function bootstrapRegisterPage() {
       $('#content').load('/html/messenger.html')
     }).catch(error => {
       toastr.error(error.message, error.name)
+      is_submitting = false;
       inputs.prop('disabled', false);
       loadingSpinner.hide();
     });

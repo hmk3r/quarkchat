@@ -72,12 +72,74 @@ module.exports = function(models, params) {
     return Message.deleteOne({_id: message._id});
   }
 
+  /**
+   *
+   *
+   * @param {string} username
+   * @param {Date} date
+   * @return {MessageModel}
+   */
+  async function createSPKRenewalMessage(username, date) {
+    return Message.updateOne(
+        {for_username: username, type: constants.MESSAGE_TYPE.SPK_CHANGE},
+        {content: date},
+        {upsert: true},
+    );
+  }
+
+  /**
+   *
+   *
+   * @param {string} username
+   * @return {MessageModel}
+   */
+  async function createOTPKSLowMessage(username) {
+    return Message.updateOne(
+        {for_username: username, type: constants.MESSAGE_TYPE.OTPKS_LOW},
+        {content: {}},
+        {upsert: true},
+    );
+  }
+
+  /**
+   *
+   *
+   * @param {string} username
+   * @return {MongooseDeletedObject}
+   */
+  async function deleteOTPKSLowMessage(username) {
+    return Message.findOneAndDelete({
+      for_username: username,
+      type: constants.MESSAGE_TYPE.OTPKS_LOW,
+    });
+  }
+
+
+  /**
+   *
+   *
+   * @param {string} username
+   * @return {Array<MessageModel>}
+   */
+  async function getServiceMessages(username) {
+    return getMessages(username, {
+      $in: [
+        constants.MESSAGE_TYPE.OTPKS_LOW,
+        constants.MESSAGE_TYPE.SPK_CHANGE,
+      ],
+    },
+    );
+  }
+
   return {
     createDM,
     getMessages,
     deleteMessage,
     getDMs,
-    // upsertMessage,
+    createSPKRenewalMessage,
+    createOTPKSLowMessage,
+    deleteOTPKSLowMessage,
+    getServiceMessages,
     deleteMessages,
   };
 };

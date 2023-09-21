@@ -1,7 +1,9 @@
 module.exports = function(params) {
   const {
     data,
+    config,
     validator,
+    dateUtils,
     cryptoUtils,
   } = params;
 
@@ -102,6 +104,111 @@ module.exports = function(params) {
 
     try {
       await data.createUser(username, publicKey, spk, otpks);
+      await data.createSPKRenewalMessage(username.toLowerCase(), new Date());
+    } catch (e) {
+      return next(e);
+    }
+
+    return res.status(200).json({});
+  }
+
+  /**
+   * Accepts a new spk
+   *
+   * @param {Express.Request} req
+   * @param {Express.Response} res
+   * @param {Express.next} next
+   */
+  async function submitSpk(req, res, next) {
+    const {
+      username,
+      spk,
+    } = req.body.messageParsed;
+    const now = dateUtils.getDate();
+
+    const invalidUsernameError = new Error('Invalid username');
+    invalidUsernameError.public = true;
+
+    if (
+      !validator.validateString(username, 3, 30) ||
+      !validator.validateStringAlphaNum()
+    ) {
+      return next(invalidUsernameError);
+    }
+
+    const user = await data.getUserByUsername(username);
+
+    try {
+      await cryptoUtils.openSignedEnvelope(
+          spk.envelope,
+          user.public_key,
+      );
+    } catch (e) {
+      const error = new Error('Invalid signed pre-key signature!');
+      error.public = true;
+      return next(error);
+    }
+
+    try {
+      user.spk = spk;
+      await data.updateUser(user);
+      const renewalDate = dateUtils.addToDate(
+          now,
+          config.spkRenewalInterval.value,
+          config.spkRenewalInterval.unit,
+      );
+      await data.createSPKRenewalMessage(user.username, renewalDate);
+    } catch (e) {
+      return next(e);
+    }
+
+    return res.status(200).json({});
+  }
+
+  /**
+   * Accepts a new set of OTPKs
+   *
+   * @param {Express.Request} req
+   * @param {Express.Response} res
+   * @param {Express.next} next
+   */
+  async function submitOtpks(req, res, next) {
+    const {
+      username,
+      otpks,
+    } = req.body.messageParsed;
+
+    const invalidUsernameError = new Error('Invalid username');
+    invalidUsernameError.public = true;
+
+    if (
+      !validator.validateString(username, 3, 30) ||
+      !validator.validateStringAlphaNum()
+    ) {
+      return next(invalidUsernameError);
+    }
+
+    const user = await data.getUserByUsername(username);
+
+    let invalidOtpkId;
+    try {
+      for (const otpk of otpks) {
+        invalidOtpkId = otpk.id;
+        await cryptoUtils.openSignedEnvelope(
+            otpk.envelope,
+            user.public_key,
+        );
+      };
+    } catch (e) {
+      const error =
+        new Error(`Invalid one-time pre-key with ID ${invalidOtpkId}!`);
+      error.public = true;
+      return next(error);
+    }
+
+    try {
+      await data.addOtpksToUser(user.username, otpks);
+      await data.deleteOTPKSLowMessage(user.username);
     } catch (e) {
       return next(e);
     }
@@ -112,5 +219,7 @@ module.exports = function(params) {
   return {
     isUsernameFree,
     registerUser,
+    submitSpk,
+    submitOtpks,
   };
 };
