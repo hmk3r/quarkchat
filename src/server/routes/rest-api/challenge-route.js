@@ -1,6 +1,6 @@
 module.exports = function(app, controllers, params) {
-  const challengeResponseController = controllers.challenge;
+  const challengeController = controllers.challenge;
 
-  app.get('/get-timestamp', challengeResponseController.serveTimestamp);
-  app.get('/challenge', challengeResponseController.serveChallenge);
+  app.get('/get-timestamp', challengeController.serveTimestamp);
+  app.get('/challenge', challengeController.serveChallenge);
 };
