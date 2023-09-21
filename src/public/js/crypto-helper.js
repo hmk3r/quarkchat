@@ -1,22 +1,26 @@
 // Part of this code was composed by me during the Year 2 Group project
 
-// https://tools.ietf.org/html/draft-ietf-msec-mikey-ecc-03
-// https://crypto.stackexchange.com/questions/2482/how-strong-is-the-ecdsa-algorithm
-// Use sha-256 to sign 256-bit ECDSA https://tools.ietf.org/html/rfc5656#section-6.2.1
 const cryptoHelper = (function () {
   const AES_256_GCM = {
     name: 'AES-GCM',
     length: 256
   }
 
+  const AES_256_CBC = {
+      name: 'AES-CBC',
+      keyLength: 256,
+  }
+
   const HKDF_SHA_512 = {
     name: 'HKDF',
-    hash: 'SHA-512'
+    hash: 'SHA-512',
+    hashOutputLengthBytes: 64
   }
 
   const HMAC_SHA_512 = {
     name: 'HMAC',
-    hash: 'SHA-512'
+    hash: 'SHA-512',
+    hashOutputLengthBytes: 64
   }
 
   const _sidhWorker = new Worker('/js/workers/sidh-worker.js');
@@ -139,6 +143,18 @@ const cryptoHelper = (function () {
     return Array.from
       ? Array.from(uint8arr)
       : uint8arr.map(v => v);
+  }
+
+  function concatUint8Arrays(...arrays) {
+    const concat = new Uint8Array(arrays.reduce((accumulator, arr) => accumulator + arr.byteLength));
+    for (let i = 0; i < arrays.length; i++) {
+      concat.set(arrays[i], i === 0 ? 0 : arrays[i].byteLength);
+    }
+    return concat;
+  }
+
+  function concatArrayBuffers(...buffers) {
+    return concatUint8Arrays(buffers.map((b) => new Uint8Array(b))).buffer;
   }
 
   // adapted from https://stackoverflow.com/a/44831114
@@ -289,10 +305,10 @@ const cryptoHelper = (function () {
   }
 
   async function hmacSign(key, data) {
-    if (!baseKey.constructor || baseKey.constructor.name !== 'CryptoKey') {
+    if (!key.constructor || key.constructor.name !== 'CryptoKey') {
       key = await crypto.subtle.importKey(
         'raw',
-        baseKey,
+        key,
         HMAC_SHA_512,
         false,
         ['sign']
@@ -300,6 +316,119 @@ const cryptoHelper = (function () {
     }
 
     return crypto.subtle.sign(HMAC_SHA_512, key, data)
+  }
+
+  async function hmacVerify(key, mac, data) {
+    if (!key.constructor || key.constructor.name !== 'CryptoKey') {
+      key = await crypto.subtle.importKey(
+        'raw',
+        key,
+        HMAC_SHA_512,
+        false,
+        ['verify']
+      );
+    }
+    return crypto.subtle.verify(HMAC_SHA_512, key, mac, data)
+  }
+
+  // as proposed in https://signal.org/docs/specifications/doubleratchet/#recommended-cryptographic-algorithms
+  async function encryptAES_CBC_HMAC_SHA512(key, plaintext, info, additionalData) {
+    if (typeof plaintext === 'string') {
+      plaintext = UTF8_ENCODER.encode(plaintext);
+    }
+
+    if (typeof info === 'string') {
+      info = UTF8_ENCODER.encode(info);
+    }
+
+    if (typeof additionalData === 'string') {
+      additionalData = UTF8_ENCODER.encode(additionalData);
+    }
+
+    const derivedBytes = await deriveBytesHKDF(
+      key,
+      new Uint8Array(HKDF_SHA_512.hashOutputLengthBytes),
+      info,
+      80
+    )
+
+    const encKey = derivedBytes.slice(0, 32);
+    const authKey = derivedBytes.slice(32, 64);
+    const iv = derivedBytes.slice(64, 80);
+
+    const aesKey = await crypto.subtle.importKey(
+      'raw',
+      encKey,
+      { name: AES_256_CBC.name },
+      false,
+      ['encrypt']
+    );;
+
+    const ciphertext = await crypto.subtle.encrypt(
+      {
+        name: AES_256_CBC.name,
+        iv
+      },
+      aesKey,
+      plaintext
+    );
+
+    const toSign = concatArrayBuffers(additionalData, ciphertext);
+    const mac = await hmacSign(authKey, toSign);
+    
+    return concatArrayBuffers(ciphertext, mac);
+  }
+
+  // reverse of encryptAES_CBC_HMAC_SHA512
+  async function decryptAES_CBC_HMAC_SHA512(key, ciphertextAndMac, info, additionalData) {
+    if (typeof info === 'string') {
+      info = UTF8_ENCODER.encode(info);
+    }
+
+    if (typeof additionalData === 'string') {
+      additionalData = UTF8_ENCODER.encode(additionalData);
+    }
+
+    const derivedBytes = await deriveBytesHKDF(
+      key,
+      new Uint8Array(HKDF_SHA_512.hashOutputLengthBytes),
+      info,
+      80
+    )
+
+    const encKey = derivedBytes.slice(0, 32);
+    const authKey = derivedBytes.slice(32, 64);
+    const iv = derivedBytes.slice(64, 80);
+
+    const ciphertextMacSplitPoint = ciphertextAndMac.byteLength - HMAC_SHA_512.hashOutputLengthBytes;
+    const ciphertext = ciphertextAndMac.slice(0, ciphertextMacSplitPoint);
+    const mac = ciphertextAndMac.slice(ciphertextMacSplitPoint, ciphertextAndMac.byteLength);
+
+    const toVerify = concatArrayBuffers(additionalData, ciphertext);
+    const isMacValid = await hmacVerify(authKey, mac, toVerify)
+
+    if (!isMacValid) {
+      throw new Error('MAC check not passed! The massage was possibly tampered with.')
+    }
+
+    const aesKey = await crypto.subtle.importKey(
+      'raw',
+      encKey,
+      { name: AES_256_CBC.name },
+      false,
+      ['decrypt']
+    );;
+
+    const plaintext = await crypto.subtle.encrypt(
+      {
+        name: AES_256_CBC.name,
+        iv
+      },
+      aesKey,
+      data
+    );
+
+    return plaintext;
   }
 
   return {
@@ -316,6 +445,10 @@ const cryptoHelper = (function () {
     base64ToUint8Array,
     arrayToUint8Array,
     uint8ArrayToArray,
+    concatUint8Arrays,
+    concatArrayBuffers,
+    encryptAES_CBC_HMAC_SHA512,
+    decryptAES_CBC_HMAC_SHA512,
     splitDataAndAuthTag,
     sha512,
     extractJWKey,
@@ -335,5 +468,6 @@ const cryptoHelper = (function () {
     verifySignature,
     deriveBytesHKDF,
     hmacSign,
+    hmacVerify,
   }
 })()
