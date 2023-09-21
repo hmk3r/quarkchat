@@ -16,6 +16,8 @@ module.exports = function(connectionString, params) {
   mongoose.connect(connectionString, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    useFindAndModify: false,
+    useCreateIndex: true,
   });
 
   const mongooseModels = {};
