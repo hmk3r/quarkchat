@@ -62,11 +62,10 @@ https://bootsnipp.com/snippets/1ea0N
           </template>
         </div>
         <div class="type_msg">
-          <form action="javascript:void(0);" method="post">
-          <div class="input_msg_write">
-            <div class="form-group">
+          <form action="javascript:void(0);" method="post" class="form-inline">
+            <div class="form-group col-sm-10 col-md-11">
               <textarea type="text" id="messageComposer" 
-              class="form-control write_msg" style="resize: none; max-width: 93%;" rows="1"
+              class="form-control write_msg" style="resize: none; width: 100%; border: none; padding-top: 0; padding-bottom: 0;" rows="2"
               placeholder="Type a message..."
               :username="activeConversationRecipient"
               :value="drafts[activeConversationRecipient]"></textarea>

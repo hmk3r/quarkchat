@@ -494,7 +494,9 @@ async function bootstrapMessenger() {
         const draftUsername = messageComposer.attr('username');
         this.activeConversationRecipient = username;
         this.scrollToLatestMessage()
-        this.$set(this.drafts, draftUsername, draft);
+        if (draftUsername) {
+          this.$set(this.drafts, draftUsername, draft);
+        }
         this.$set(this.conversations, username, false);
       },
       scrollToLatestMessage: function () {
@@ -601,4 +603,6 @@ async function bootstrapMessenger() {
   $('#app').attr('style', '');
   messageComposer.focus();
   fetchMessages(app, dmProcessor);
+  const latestMessageDom = document.getElementById('latestMessage');
+  if (latestMessageDom) latestMessageDom.scrollIntoView();
 }
