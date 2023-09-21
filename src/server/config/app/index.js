@@ -15,7 +15,8 @@ module.exports = function(params) {
   const app = express();
   app.set('view engine', 'pug');
   app.set('views', path.join(__dirname, '/../../views'));
-  app.use('/static', express.static('./src/public'));
+  app.use(express.static('./src/public'));
+  app.use('/libs', express.static('./libs'));
   app.use(cookieParser());
   app.use(bodyParser.urlencoded({extended: true}));
   app.use(bodyParser.json());
@@ -23,7 +24,7 @@ module.exports = function(params) {
     secret: 'PQChat',
     saveUninitialized: true,
     resave: false,
-  })); // change for production
+  })); // change secret for production
 
   return app;
 };
