@@ -38,7 +38,7 @@ module.exports = function(connectionString, params) {
   fileWalker(__dirname, (module) => {
     let dataModule = {};
     if (module.includes('-data')) {
-      dataModule = require(module)(mongooseModels, validator);
+      dataModule = require(module)(mongooseModels, params);
     }
     Object.keys(dataModule)
         .forEach((key) => {

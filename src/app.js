@@ -1,12 +1,23 @@
 const config = require('./server/config');
 const validator = require('./server/utils/validator');
 
+const HttpServer = require('http').Server;
+
 // Application bootstrap
+
+// Data layer and express app
 const data = require('./server/data')(config.connectionString, {validator});
 const app = require('./server/config/app')({data});
-const controllers = require('./server/controllers')({data});
+
+// Socket setup
+const server = new HttpServer(app);
+const io = require('./server/config/socket')(server);
+
+// Controllers and routes
+const controllers = require('./server/controllers')({data, io});
 require('./server/routes')(app, controllers, {});
 
-const server = app.listen(config.port, () => {
+// Start server
+server.listen(config.port, () => {
   console.log(`App running on localhost:${server.address().port}`);
 });
