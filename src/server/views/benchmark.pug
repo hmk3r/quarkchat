@@ -1,0 +1,39 @@
+doctype
+html(lang='en', style='height: 100%')
+  head
+    meta(charset='utf-8')
+    meta(name='viewport',content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
+    title QuarkChat | Benchmark
+    link(rel='stylesheet', href='/libs/bootstrap/dist/css/bootstrap.min.css', attr)
+    link(rel='stylesheet', href='/libs/toastr/build/toastr.min.css', attr)
+
+    block scripts
+      script(src='/libs/jquery/dist/jquery.min.js' defer)
+      script(src='/libs/bootstrap/dist/js/bootstrap.bundle.min.js' defer)
+      script(src='/libs/toastr/build/toastr.min.js' defer)
+      script(src='/js/constants.js' defer)
+      script(src='/libs/promise-worker/dist/promise-worker.min.js' defer)
+      script(src='/js/helpers.js' defer)
+      script(src='/js/crypto-helper.js' defer)
+      script(src='/js/benchmarks/utils.js')
+      script(src='/js/benchmarks/account-gen.js' defer)
+  body(style='height: 100%')
+    block body
+      div Account generation benchmark
+        input#runs(type="number", name="runs")
+        button#runBenchmark Run
+        p Run:&nbsp;
+          span#runNum -
+          |/
+          span#numRuns -
+        div Results:&nbsp;
+          p Run times:&nbsp;
+            span#results -
+          p Average:&nbsp;
+            span#average -
+            | ms
+          p Standard Deviation:&nbsp;
+            span#std -
+            | ms
+
+
