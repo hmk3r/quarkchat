@@ -3,13 +3,16 @@ const crypto = require('crypto');
 
 /**
  * Generates a random string using a cryptographically secure RNG
+ * By default it's composed of the base64 character set
  *
- * @param {int} length
+ * @param {int} length in Bytes; 8 by default
+ * @param {string} encoding string character set - base64, utf-8, hex, etc.
  * @return {string} random string
  */
-async function randomHexString(length) {
-  length = length || 32;
-  return crypto.randomBytes(length).toString('hex');
+async function randomString(length, encoding) {
+  length = length || 8;
+  encoding = encoding || '';
+  return crypto.randomBytes(length).toString(encoding);
 }
 
 /**
@@ -81,10 +84,32 @@ async function base64ToUint8(base64String) {
   return uintArray;
 }
 
+/**
+ * Covert an ASCII string to base64
+ *
+ * @param {string} string ASCII String
+ * @return {string} string encoded as Base64
+ */
+function base64Encode(string) {
+  return Buffer.from(string, 'ascii').toString('base64');
+}
+
+/**
+ * Covert a base64 string to an ASCII string
+ *
+ * @param {string} string ASCII String
+ * @return {string} string encoded as Base64
+ */
+function base64Decode(string) {
+  return Buffer.from(string, 'base64').toString('ascii');
+}
+
 module.exports = {
-  randomHexString,
+  randomString,
   openSignedEnvelope,
   isSignatureValid,
   base64ToBuffer,
   base64ToUint8,
+  base64Encode,
+  base64Decode,
 };
