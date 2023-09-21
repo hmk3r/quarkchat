@@ -103,8 +103,13 @@ module.exports = function(params) {
     }
 
     try {
-      await data.createUser(username, publicKey, spk, otpks);
-      await data.createSPKRenewalMessage(username.toLowerCase(), new Date());
+      const user = await data.createUser(username, publicKey, spk, otpks);
+      const renewalDate = dateUtils.addToDate(
+          new Date(),
+          config.spkRenewalInterval.value,
+          config.spkRenewalInterval.unit,
+      );
+      data.createSPKRenewalMessage(user.username, renewalDate);
     } catch (e) {
       return next(e);
     }
