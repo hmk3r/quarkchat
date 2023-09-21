@@ -75,6 +75,9 @@ const typedJSON = (() => {
   }
 
   function reviver(key, value) {
+    if (!value) {
+      return value;
+    }
     if(!value[TYPE_FIELD] || !value[VALUE_FIELD]) {
       return value;
     }
