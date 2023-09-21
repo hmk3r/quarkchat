@@ -1,5 +1,11 @@
 # Quark chat
 
+An IM application implementing a custom, (presumably) quantum-safe IM protocol.
+
+User manual can be found in [UserManual.pdf](./UserManual.pdf)
+
+The paper describing the protocol, issues it solves, its performance and the architecture of this application can be found in [Paper_Quantum-resistant_cryptographic_protocol_for_instant_messaging.pdf](./Paper_Quantum-resistant_cryptographic_protocol_for_instant_messaging.pdf)
+
 ## Installation
 
 - MongoDB version 4.2.1(or later) must be installed, running at its default port (27017) without authentication
