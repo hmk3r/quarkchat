@@ -38,7 +38,7 @@ async function benchmarkAccount() {
   $('#numRuns').text(runs.toString())
   const results = [];
   for (let i = 0; i < runs; i++) {
-    $('#runNum').text(i.toString())
+    $('#runNum').text((i + 1).toString())
     const start = performance.now();
     await generateAccount(`test${i}`);
     results.push(performance.now() - start);
@@ -48,6 +48,13 @@ async function benchmarkAccount() {
   $('#results').text(results.join('ms, '));
   $('#average').text(avg.toString());
   $('#std').text(std.toString());
+
+  
+  const downloadButton = $('#accountGenResultsDownload');
+  downloadButton.prop('href', `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(results))}`)
+  downloadButton.prop('download', `accountGenBenchmark-${runs}-${messageSize}-${navigator.userAgent.replace(/[/\\?%*:|"<>]/g, '-')}.json`)
+  downloadButton.removeClass('disabled');
+  downloadButton[0].click();
 }
 
 $('#runBenchmark').on('click', function() {

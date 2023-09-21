@@ -81,10 +81,10 @@ async function postJsonAuthenticated(url, data, username, privateKey) {
 function displayTimes(times) {
   for(const time in times) {
     if (!times.hasOwnProperty(time)) continue;
-    console.log(`${time}:`)
-    console.log(`Times: ${times[time].join('ms, ')}`)
-    console.log(`Average: ${average(times[time])}ms`)
-    console.log(`Standard deviation: ${standardDiv(times[time])}ms`)
+    const element = $(`#${time}`)
+    element.find('.results').text(times[time].join('ms, '));
+    element.find('.average').text(average(times[time]))
+    element.find('.std').text(standardDiv(times[time]))
   }
 }
 
@@ -97,9 +97,9 @@ async function benchmarkMessaging() {
   const skipMessagesNoTickDecryptTimes = [];
   const outOfOrderMessageDecryptTimes = [];
 
-  const RUNS = 20;
+  const runs = parseInt($('#runsMessaging').val());
+  const messageSize = parseInt($('#messageSize').val());
 
-  const messageSize = 60;
   const alice = await generateAlice();
   const bob = await generateBob();
   window.aliceAcc = alice;
@@ -118,7 +118,7 @@ async function benchmarkMessaging() {
 
   let aliceInitialMessage;
 
-  for (let i = 0; i < RUNS; i++) {
+  for (let i = 0; i < runs; i++) {
     // sending initial message: Alice contacts bob, ignoring network conditions
     const start = performance.now();
     const bobPreKeyBundle = await postJsonAuthenticated('/messaging/key-bundle', { forUsername: 'bob' }, 'alice', alice.privateKey);
@@ -175,7 +175,7 @@ async function benchmarkMessaging() {
   // end initial message
 
   // receive first message
-  for (let i = 0; i < RUNS; i++) {
+  for (let i = 0; i < runs; i++) {
     const start = performance.now();
     const isSignatureValid = await cryptoHelper.verifySignature(
       cryptoHelper.base64ToUint8Array(aliceInitialMessage.signature),
@@ -229,7 +229,7 @@ async function benchmarkMessaging() {
 
   let bobStateTmpRegular;
   // encrypt regular message
-  for (let i = 0; i < RUNS; i++) {
+  for (let i = 0; i < runs; i++) {
     bobStateTmpRegular = $.extend(true, {}, bobState)
     const start = performance.now();
 
@@ -241,10 +241,9 @@ async function benchmarkMessaging() {
   bobState = bobStateTmpRegular;
   // end regular message
 
-  console.log(bobRegularMessage)
   // decrypt message tick
   let aliceStateTmpTick;
-  for (let i = 0; i < RUNS; i++) {
+  for (let i = 0; i < runs; i++) {
     aliceStateTmpTick = $.extend(true, {}, aliceState);
     const start = performance.now();
 
@@ -284,7 +283,7 @@ async function benchmarkMessaging() {
   // end prep messages
 
   // decrypt message no-tick in order
-  for (let i = 0; i < RUNS; i++) {
+  for (let i = 0; i < runs; i++) {
     let aliceStateTmpNoTickInOrder = $.extend(true, {}, aliceState);
     const start = performance.now();
 
@@ -309,7 +308,7 @@ async function benchmarkMessaging() {
 
   let aliceStateTmpNoTickSkip1;
   // decrypt message no-tick skip 1
-  for (let i = 0; i < RUNS; i++) {
+  for (let i = 0; i < runs; i++) {
     aliceStateTmpNoTickSkip1 = $.extend(true, {}, aliceState);
     const start = performance.now();
 
@@ -335,7 +334,7 @@ async function benchmarkMessaging() {
 
   
   // decrypt message out of order
-  for (let i = 0; i < RUNS; i++) {
+  for (let i = 0; i < runs; i++) {
     let aliceStateTmpNoTickOutOfOrder= $.extend(true, {}, aliceState);
     const start = performance.now();
 
@@ -357,8 +356,7 @@ async function benchmarkMessaging() {
     outOfOrderMessageDecryptTimes.push(performance.now() - start);
   }
   // end decrypt message out of order
-
-  displayTimes({
+  const times = {
     initialMessagesEncryptTimes,
     initialMessagesDecryptTimes,
     regularMessagesEncryptTimes,
@@ -366,5 +364,19 @@ async function benchmarkMessaging() {
     regularMessageNoTickDecryptTimes,
     skipMessagesNoTickDecryptTimes,
     outOfOrderMessageDecryptTimes,
-  })
+  }
+  displayTimes(times);
+
+  const downloadButton = $('#messagingResultsDownload');
+  downloadButton.prop('href', `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(times))}`)
+  downloadButton.prop('download', `messageBenchmark-${runs}-${messageSize}-${navigator.userAgent.replace(/[/\\?%*:|"<>]/g, '-')}.json`)
+  downloadButton.removeClass('disabled');
+  downloadButton[0].click();
 }
+
+$('#runBenchmarkMessaging').on('click', function() {
+  $(this).prop('disabled', true);
+  benchmarkMessaging().then(() => {
+    $(this).prop('disabled', false)
+  })
+})
