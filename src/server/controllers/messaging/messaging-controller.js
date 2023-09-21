@@ -98,7 +98,7 @@ module.exports = function(params) {
     const {
       username,
     } = req.body.messageParsed;
-    console.log(username);
+
     try {
       const dms = await data.getDMs(username);
       await data.deleteMessages(dms);
