@@ -1,13 +1,17 @@
 {
   "cSpell.words": [
+    "INDEXEDDB",
     "Kyorovski",
     "Lyubomir",
     "cryptosystem",
     "keypair",
+    "localforage",
     "otpk",
     "otpks",
     "posttest",
     "sidh",
-    "sphincs"
+    "sphincs",
+    "spks",
+    "toastr"
   ]
 }

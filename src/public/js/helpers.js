@@ -11,7 +11,7 @@ async function postJson(url = '', data = {}) {
     referrerPolicy: 'no-referrer', // no-referrer, *client
     body: JSON.stringify(data) // body data type must match "Content-Type" header
   });
-  const responseBody = response.json();
+  const responseBody = await response.json();
 
   if (response.status >= 400) {
    const error = new Error(responseBody.message);
@@ -29,7 +29,7 @@ async function getJson(url = '') {
     redirect: 'follow', // manual, *follow, error
     referrerPolicy: 'no-referrer', // no-referrer, *client
   });
-  const responseBody = response.json();
+  const responseBody = await response.json();
 
   if (response.status >= 400) {
    const error = new Error(responseBody.message);
@@ -38,4 +38,9 @@ async function getJson(url = '') {
   }
 
   return responseBody;
+}
+
+
+function timeout(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

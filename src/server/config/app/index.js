@@ -20,8 +20,8 @@ module.exports = function(params) {
   app.use('/libs', express.static('./libs'));
   app.use(favicon(path.join(__dirname, '../../../public/images/favicon.ico')));
   app.use(cookieParser());
-  app.use(bodyParser.urlencoded({extended: true}));
-  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({limit: '20mb', extended: true}));
+  app.use(bodyParser.json({limit: '20mb'}));
   app.use(session({
     secret: 'PQChat',
     saveUninitialized: true,

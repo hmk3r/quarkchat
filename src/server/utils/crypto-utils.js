@@ -48,10 +48,10 @@ async function openSignedEnvelope(envelope, publicKey) {
  */
 async function isSignatureValid(signature, message, publicKey) {
   if (typeof signature === 'string') {
-    envelope = await base64ToUint8(signature);
+    signature = await base64ToUint8(signature);
   }
   if (typeof message === 'string') {
-    envelope = await base64ToUint8(message);
+    message = await base64ToUint8(message);
   }
   if (typeof publicKey === 'string') {
     publicKey = await base64ToUint8(publicKey);

@@ -58,24 +58,10 @@ module.exports = function(models, params) {
     return userModel.save();
   }
 
-  /**
-   * Add one-time pre-keys to user
-   *
-   * @param {string} username
-   * @param {Array<Object>} otpks
-   * @return {void}
-   */
-  async function addOtpksToUser(username, otpks) {
-    const dbUser = await getUserByUsername(username);
-    dbUser.otpks.push(...otpks);
-    return dbUser.save();
-  }
-
   return {
     usernameExists,
     getUserByUsername,
     createUser,
     updateUser,
-    addOtpksToUser,
   };
 };

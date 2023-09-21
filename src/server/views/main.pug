@@ -5,6 +5,7 @@ html(lang='en', style='height: 100%')
     meta(name='viewport',content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
     title QuarkChat
     link(rel='stylesheet', href='/libs/bootstrap/dist/css/bootstrap.min.css', attr)
+    link(rel='stylesheet', href='/libs/toastr/build/toastr.min.css', attr)
 
     block scripts
       script(src='/libs/jquery/dist/jquery.min.js' defer)
@@ -12,6 +13,10 @@ html(lang='en', style='height: 100%')
       script(src='/libs/sidh/dist/sidh.js' defer)
       script(src='/libs/sphincs/dist/sphincs.js' defer)
       script(src='/libs/socket.io-client/dist/socket.io.js' defer)
+      script(src='/libs/localforage/dist/localforage.min.js' defer)
+      script(src='/libs/toastr/build/toastr.min.js' defer)
+      script(src='/js/constants.js' defer)
+      script(src='/js/db-init.js' defer)
       script(src='/js/helpers.js' defer)
       script(src='/js/crypto-helper.js' defer)
       script(src='/js/main.js' defer)
@@ -24,7 +29,7 @@ html(lang='en', style='height: 100%')
             p This is just a proof of concept and 
               em.text-danger likely contains serious implementation errors.
           hr
-          form(method='post', class='form-vertical', action='javascript:void(0);')
+          form#registerForm(method='post', class='form-vertical', action='javascript:void(0);')
             fieldset
               div(style='text-align: center')
                 legend: strong.text-info Register
@@ -35,7 +40,10 @@ html(lang='en', style='height: 100%')
                 div#usernameFeedback.invalid-feedback Invalid username
 
               div.form-actions
-                input.btn.btn-primary.float-right(type='submit', value='Register')
+                button#registerSubmitBtn.btn.btn-primary.float-right(type='submit')
+                  span#loadingSpinner.spinner-border.spinner-border-sm(role='status' aria-hidden='true' style='display: none;')
+                  span &nbsp;
+                  | Register
               
               div.form-actions
                 input.btn.btn-success.float-left(type='button', value='Import profile')

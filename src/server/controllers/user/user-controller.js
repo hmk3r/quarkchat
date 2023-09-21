@@ -36,15 +36,38 @@ module.exports = function(params) {
   async function registerUser(req, res, next) {
     const {
       username,
+      usernameSignature,
       publicKey,
       spk,
       otpks,
     } = req.body;
 
+    const invalidUsernameError = new Error('Invalid username');
+    invalidUsernameError.public = true;
+
     if (!validator.validateString(username, 3, 30)) {
-      const error = new Error('Invalid username');
-      error.public = true;
-      return next(error);
+      return next(invalidUsernameError);
+    }
+
+    // Prevent a replay attack in which the keys are replayed
+    // but with a different username
+    try {
+      const usernameSignatureValid = await cryptoUtils.isSignatureValid(
+          usernameSignature,
+          cryptoUtils.base64Encode(username),
+          publicKey,
+      );
+
+      if (!usernameSignatureValid) {
+        const error = new Error('Invalid username signature');
+        error.public = true;
+        throw error;
+      }
+    } catch (e) {
+      if (e.public) {
+        return next(e);
+      }
+      return next(invalidUsernameError);
     }
 
     try {
@@ -60,10 +83,13 @@ module.exports = function(params) {
 
     let invalidOtpkId;
     try {
-      for (const otpk of otpks) {
-        invalidOtpkId = otpk.id;
+      for (const otpkId in otpks) {
+        if (!otpks.hasOwnProperty(otpkId)) {
+          continue;
+        }
+        invalidOtpkId = otpkId;
         await cryptoUtils.openSignedEnvelope(
-            otpk.envelope,
+            otpks[otpkId],
             publicKey,
         );
       };
@@ -74,10 +100,21 @@ module.exports = function(params) {
       return next(error);
     }
 
-    await data.createUser(username, publicKey, spk, otpks);
+    console.info('OTPKS signature pass');
 
-    res.sendStatus(200);
+    try {
+      await data.createUser(username, publicKey, spk, otpks);
+    } catch (e) {
+      const error =
+        new Error(e.name);
+      error.public = true;
+      console.log(e.message.substring(0, 100));
+      return next(error);
+    }
+
+    return res.status(200).json({});
   }
+
   return {
     isUsernameFree,
     registerUser,
