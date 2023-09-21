@@ -17,14 +17,14 @@ $("#username").on('change keydown paste input blur', function(){
   if (username.length < 3 || username.length > 30) {
     validationResult = Promise.resolve('Username must be between 3 and 30 characters')
   } else {
-    validationResult = fetch(`/username-check/${username}`)
-      .then(response => {return response.json()})
+    validationResult = getJson(`/username-check/${username}`)
       .then(response => {
-        if (response.status >= 400) {
-          return response.message
-        } else if (!response.isFree){
-          return 'This username is already taken'
+        if (!response.isFree){
+          return 'This username is already taken';
         }
+      })
+      .catch(error => {
+        return error.message;
       })
   }
 
