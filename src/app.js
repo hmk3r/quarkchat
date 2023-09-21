@@ -1,5 +1,6 @@
 const config = require('./server/config');
 const validator = require('./server/utils/validator');
+const cryptoUtils = require('./server/utils/crypto-utils');
 
 const HttpServer = require('http').Server;
 
@@ -14,7 +15,12 @@ const server = new HttpServer(app);
 const io = require('./server/config/socket')(server);
 
 // Controllers and routes
-const controllers = require('./server/controllers')({data, io, validator});
+const controllers = require('./server/controllers')({
+  data,
+  io,
+  validator,
+  cryptoUtils,
+});
 require('./server/routes')(app, controllers, {});
 require('./server/config/app/post-routes-config')(app, {config});
 
