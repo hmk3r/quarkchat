@@ -4,3 +4,5 @@ if(!localforage.supports(localforage.INDEXEDDB)) {
 }
 const accountStorage = localforage.createInstance({ name: 'QuarkChat', storeName: 'account' });
 const messageStorage = localforage.createInstance({ name: 'QuarkChat' , storeName: 'messages' });
+const pkStorage = localforage.createInstance({ name: 'QuarkChat' , storeName: 'prekeys' })
+const otpkStorage = localforage.createInstance({ name: 'QuarkChat' , storeName: 'onetimeprekeys' })

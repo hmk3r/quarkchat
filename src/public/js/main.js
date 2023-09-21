@@ -17,6 +17,20 @@ toastr.options = {
   'hideMethod': 'fadeOut'
 }
 
+if (!localStorage.getItem('performance-disclaimer-dismiss', 'true')) {
+  toastr.info(
+    `As this is an experiment, the application monitors how long it
+    takes to execute code which involves post-quantum cryptography.
+    You can click on this message to hide it permanently.`,
+    'Performance data collection',
+    {
+      'timeOut': '0',
+      'extendedTimeOut': '0',
+      'onclick': () => localStorage.setItem('performance-disclaimer-dismiss', 'true'),
+      'onCloseClick': () => localStorage.setItem('performance-disclaimer-dismiss', 'true')
+    });  
+}
+
 socket.on('socket_id', (socketId) => {
   console.log(socketId, ' ', typeof socketId);
 })
@@ -69,7 +83,7 @@ async function generateAccount(username) {
   const pkKeypair = await cryptoHelper.generateDHKeys();
   await accountStorage.setItem(constants.SPK_INDEX_DB_FIELD, constants.DEFAULT_INDEX);
   const pkIndex = await accountStorage.getItem(constants.SPK_INDEX_DB_FIELD);
-  await accountStorage.setItem(constants.SPKS_DB_FIELD, {id: pkIndex, privateKey: pkKeypair.privateKey});
+  await pkStorage.setItem(pkIndex.toString(), pkKeypair.privateKey);
 
   const spkEnvelope = await cryptoHelper.signInEnvelope(pkKeypair.publicKey, signatureKeypair.privateKey);
   
@@ -79,18 +93,16 @@ async function generateAccount(username) {
   );
   
   const otpks = {};
-  const otpksPrivate = {};
   let otpkIndex = constants.DEFAULT_INDEX;
   for (let i = 0; i < constants.OTPKS_AMOUNT; i++, otpkIndex++) {
     const dhKeyPair = await cryptoHelper.generateDHKeys();
     const otpkEnvelope = await cryptoHelper.signInEnvelope(dhKeyPair.publicKey, signatureKeypair.privateKey);
     otpks[otpkIndex.toString()] = cryptoHelper.uint8ArrayToBase64(otpkEnvelope);
-    otpksPrivate[otpkIndex] = dhKeyPair.privateKey;
+    await accountStorage.setItem(constants.OTPK_INDEX_DB_FIELD, otpkIndex);
+    await otpkStorage.setItem(otpkIndex.toString(), dhKeyPair.privateKey);
   }
 
-  await accountStorage.setItem(constants.OTPK_INDEX_DB_FIELD, otpkIndex);
-  await accountStorage.setItem(constants.OTPKS_DB_FIELD, otpksPrivate);
-
+  await accountStorage.setItem(constants.USERNAME_DB_FIELD, username);
   return {
     username,
     usernameSignature: cryptoHelper.uint8ArrayToBase64(usernameSignature),
