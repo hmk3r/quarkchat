@@ -16,8 +16,14 @@ module.exports = {
       maxlength: [30, 'Username is too long!'],
     },
     content: {
-      type: String,
+      type: Object,
       required: true,
     },
   },
+  indexes: [
+    {
+      fields: {for_username: 1, type: -1},
+      options: {},
+    },
+  ],
 };

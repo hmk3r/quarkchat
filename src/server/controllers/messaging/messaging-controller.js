@@ -51,7 +51,10 @@ module.exports = function(params) {
 
       if (requester.contacts.includes(recipient.username) ||
         recipient.contacts.includes(requester.username)) {
-        return res.json({pubicKey: recipient.public_key});
+        return res.json({
+          username: recipient.username,
+          pubicKey: recipient.public_key,
+        });
       }
 
       const otpk = await data.getOtpk(recipient.username);

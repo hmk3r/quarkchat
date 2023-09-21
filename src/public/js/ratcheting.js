@@ -19,6 +19,7 @@ const ratcheting = (() => {
   }
   
   async function _tickDHRatchet(state, header) {
+    state.received = true;
     state.previousChainLength = state.messageNumberSend;
     state.messageNumberSend = 0;
     state.messageNumberReceive = 0;
@@ -74,7 +75,7 @@ const ratcheting = (() => {
     }
   }
 
-  async function ratchetSetupInitiator(ownUsername, remoteUsername, sharedKey, dhReceive) {
+  async function ratchetSetupInitiator(ownUsername, remoteUsername, sharedKey, dhReceive, initialisationParams) {
     const dhSendKeypair = await cryptoHelper.generateDHKeys();
     const dhInit = await cryptoHelper.deriveDHSecret(dhSendKeypair.privateKey, dhReceive)
     const derivedBytes = await cryptoHelper.deriveBytesHKDF(
@@ -101,7 +102,9 @@ const ratcheting = (() => {
       messageNumberSend,
       messageNumberReceive,
       previousChainLength,
-      skippedMessageKeys: {}
+      skippedMessageKeys: {},
+      initialisationParams,
+      received: false,
     }
   }
 
@@ -118,7 +121,9 @@ const ratcheting = (() => {
       messageNumberSend: 0,
       messageNumberReceive: 0,
       previousChainLength: 0,
-      skippedMessageKeys: {}
+      skippedMessageKeys: {},
+      initialisationParams: {},
+      received: true,
     }
   }
 
