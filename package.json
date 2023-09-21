@@ -42,7 +42,7 @@
       "jquery": "3.5.0",
       "socket.io-client": "2.3.0",
       "localforage": "1.7.3",
-      "promise-worker": "2.0.1",
+      "webworker-promise": "0.4.2",
       "font-awesome": "4.7.0",
       "randomart-js": "0.1.1",
       "moment": "2.24.0"

@@ -23,5 +23,6 @@ const constants = (function() {
       SPK_CHANGE: 'spk_change',
       OTPKS_LOW: 'otpks_low',
     },
+    MAX_THREADS_PER_WORKER: 6,
   }
 })();

@@ -23,10 +23,14 @@ const cryptoHelper = (function () {
     hashOutputLengthBytes: 64
   }
 
-  const _sidhWorker = new Worker('/js/workers/sidh-worker.js');
-  const _sphincsWorker = new Worker('/js/workers/sphincs-worker.js');
-  const sidhWorker = new PromiseWorker(_sidhWorker);
-  const sphincsWorker = new PromiseWorker(_sphincsWorker);
+  const sidhWorker = WebWorkerPromisePool.create({
+    src: '/js/workers/sidh-worker.js',
+    maxThreads: constants.MAX_THREADS_PER_WORKER,
+  })
+  const sphincsWorker = WebWorkerPromisePool.create({
+    src: '/js/workers/sphincs-worker.js',
+    maxThreads: constants.MAX_THREADS_PER_WORKER,
+  })
 
   const UTF8_ENCODER = new TextEncoder('utf-8')
   const UTF8_DECODER = new TextDecoder('utf-8')
